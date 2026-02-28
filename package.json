@@ -1,0 +1,52 @@
+{
+  "name": "storno-cli",
+  "version": "1.0.1",
+  "description": "MCP server for the Storno.ro e-invoicing API — enables AI tools (Claude, Cursor, Windsurf) to manage invoices, clients, companies, and the full e-Factura workflow",
+  "type": "module",
+  "bin": {
+    "storno-cli": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md",
+    "TOOLS.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "storno",
+    "e-invoicing",
+    "e-factura",
+    "anaf",
+    "invoicing",
+    "romania",
+    "ai-tools",
+    "claude",
+    "cursor"
+  ],
+  "author": "Storno.ro",
+  "license": "MIT",
+  "homepage": "https://storno.ro",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stornoro/storno-cli"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
