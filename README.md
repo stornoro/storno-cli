@@ -254,4 +254,4 @@ storno-cli/
 
 ## License
 
-Private — Storno.ro
+[Elastic License 2.0 (ELv2)](LICENSE)
