@@ -33,6 +33,7 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Notifications](#notifications)
 - [Webhooks](#webhooks)
 - [API Keys](#api-keys)
+- [OAuth2 Apps](#oauth2-apps)
 - [Reports](#reports)
 - [Exports](#exports)
 - [Admin](#admin)
@@ -48,7 +49,7 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [CPV Codes](#cpv-codes)
 - [NC Codes](#nc-codes)
 
-**Total tools: 229**
+**Total tools: 236**
 
 ---
 
@@ -2589,6 +2590,85 @@ List all API tokens for the authenticated user within the current organization. 
 ### `api_keys_scopes`
 
 List all permission scopes available to the current user, grouped by category. Only scopes the user already holds are returned — useful for inspecting what permissions a token can be granted.
+
+*No parameters required.*
+
+---
+
+## OAuth2 Apps
+
+### `oauth2_clients_list`
+
+List all registered OAuth2 applications for the current organization. Returns app name, client ID, client type, scopes, status, and creation date.
+
+*No parameters required.*
+
+### `oauth2_clients_get`
+
+Get details of a specific OAuth2 application by its UUID.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `uuid` | string | Yes | OAuth2 app UUID |
+
+### `oauth2_clients_create`
+
+Register a new OAuth2 application (third-party integration). Returns the client secret once for confidential clients — store it securely. Cannot be called via API key or OAuth2 token; requires a browser session JWT.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `name` | string | Yes | Human-readable name for the app |
+| `clientType` | string | No | `confidential` (default, server-side) or `public` (SPA/mobile) |
+| `redirectUris` | string[] | Yes | Allowed OAuth2 callback URLs |
+| `scopes` | string[] | Yes | Permission scopes the app can request (must be subset of your permissions) |
+| `description` | string | No | Optional description of the app |
+| `websiteUrl` | string | No | App website URL |
+| `logoUrl` | string | No | App logo URL |
+
+### `oauth2_clients_update`
+
+Update an existing OAuth2 application. Only provided fields are changed. Cannot be called via API key or OAuth2 token.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `uuid` | string | Yes | OAuth2 app UUID |
+| `name` | string | No | New name |
+| `description` | string | No | New description |
+| `redirectUris` | string[] | No | New redirect URIs |
+| `scopes` | string[] | No | New scopes |
+| `isActive` | boolean | No | Enable/disable the app |
+| `websiteUrl` | string | No | New website URL |
+| `logoUrl` | string | No | New logo URL |
+
+### `oauth2_clients_revoke`
+
+Revoke an OAuth2 application and all its associated access and refresh tokens. This action is irreversible. Cannot be called via API key or OAuth2 token.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `uuid` | string | Yes | OAuth2 app UUID |
+
+### `oauth2_clients_rotate_secret`
+
+Rotate the client secret of a confidential OAuth2 application. Returns the new secret once — store it securely. The old secret is immediately invalidated. Cannot be called via API key or OAuth2 token.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `uuid` | string | Yes | OAuth2 app UUID |
+
+### `oauth2_clients_scopes`
+
+List all available permission scopes that can be granted to OAuth2 applications, grouped by category. Only returns scopes the authenticated user holds.
 
 *No parameters required.*
 

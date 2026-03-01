@@ -68,6 +68,7 @@ import { tools as invitationsTools } from './tools/invitations.js';
 import { tools as notificationsTools } from './tools/notifications.js';
 import { tools as webhooksTools } from './tools/webhooks.js';
 import { tools as apiKeysTools } from './tools/api-keys.js';
+import { tools as oauth2ClientsTools } from './tools/oauth2-clients.js';
 import { tools as reportsTools } from './tools/reports.js';
 import { tools as exportsTools } from './tools/exports.js';
 import { tools as adminTools } from './tools/admin.js';
@@ -118,6 +119,7 @@ const allTools: ToolDef[] = [
   ...notificationsTools,
   ...webhooksTools,
   ...apiKeysTools,
+  ...oauth2ClientsTools,
   ...reportsTools,
   ...exportsTools,
   ...adminTools,
