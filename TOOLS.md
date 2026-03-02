@@ -307,7 +307,8 @@ Create a new draft invoice. Requires a clientId and at least one line item. The 
 | `autoApplyVatRules` | boolean | No | Auto-apply VAT rules: reverse charge for VIES-valid EU clients, OSS destination rate for non-VIES EU clients (default: false) |
 | `vatIncluded` | boolean | No | When used with `autoApplyVatRules`, sets whether unit prices include VAT on all lines |
 | `paymentMethod` | enum | No | Payment method: `bank_transfer` (default), `cash`, `card`, `cheque`, `other` |
-| `lines` | array | Yes | Invoice line items (at least one required) |
+| `ublExtensions` | object | No | UBL extension fields for advanced e-Factura compliance. Supports: `invoicePeriod` (startDate, endDate, descriptionCode), `delivery` (actualDeliveryDate, deliveryAddress), `allowanceCharges` (array, max 20 — each with chargeIndicator, amount, taxCategoryCode, taxRate), `prepaidAmount`, `additionalDocumentReferences` (array, max 10 — each with id, documentTypeCode, documentDescription) |
+| `lines` | array | Yes | Invoice line items (at least one required). Each line may include `ublExtensions` with: `invoicePeriod`, `allowanceCharges` (max 10), `additionalItemProperties` (max 20, name/value), `originCountry` |
 
 ### `invoices_update`
 
@@ -346,7 +347,8 @@ Update an existing draft invoice. Only invoices with status "draft" can be updat
 | `autoApplyVatRules` | boolean | No | Auto-apply VAT rules: reverse charge for VIES-valid EU clients, OSS destination rate for non-VIES EU clients (default: false) |
 | `vatIncluded` | boolean | No | When used with `autoApplyVatRules`, sets whether unit prices include VAT on all lines |
 | `paymentMethod` | enum | No | Payment method: `bank_transfer`, `cash`, `card`, `cheque`, `other` |
-| `lines` | array | No | Invoice line items. WARNING: replaces all existing lines — include every line you want to keep. |
+| `ublExtensions` | object | No | UBL extension fields (same schema as invoices_create). Pass `null` to clear. |
+| `lines` | array | No | Invoice line items. WARNING: replaces all existing lines — include every line you want to keep. Each line may include `ublExtensions`. |
 
 ### `invoices_delete`
 

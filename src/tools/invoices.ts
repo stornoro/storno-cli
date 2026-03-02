@@ -3,6 +3,105 @@ import { apiRequest } from '../client.js';
 import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/errors.js';
 import { getConfig } from '../config.js';
 
+const lineUblExtensionsSchema = z
+  .object({
+    invoicePeriod: z
+      .object({
+        startDate: z.string().optional().describe('Period start date (YYYY-MM-DD)'),
+        endDate: z.string().optional().describe('Period end date (YYYY-MM-DD)'),
+      })
+      .optional()
+      .describe('Billing period for this line'),
+    allowanceCharges: z
+      .array(
+        z.object({
+          chargeIndicator: z.boolean().describe('false=allowance/discount, true=charge/surcharge'),
+          reasonCode: z.string().optional().describe('Allowance/charge reason code'),
+          reason: z.string().optional().describe('Reason text'),
+          amount: z.string().describe('Allowance/charge amount (numeric string, e.g. "5.00")'),
+          baseAmount: z.string().optional().describe('Base amount for percentage calculation'),
+          multiplierFactorNumeric: z.string().optional().describe('Percentage (e.g. "10.00" for 10%)'),
+        })
+      )
+      .optional()
+      .describe('Line-level allowances/charges (max 10)'),
+    additionalItemProperties: z
+      .array(
+        z.object({
+          name: z.string().describe('Property name (max 50 chars)'),
+          value: z.string().describe('Property value (max 100 chars)'),
+        })
+      )
+      .optional()
+      .describe('Additional item properties for UBL (max 20)'),
+    originCountry: z
+      .string()
+      .optional()
+      .describe('Item origin country code (ISO 3166-1 alpha-2, e.g. "DE")'),
+  })
+  .optional()
+  .describe('UBL extension fields for this line item');
+
+const documentUblExtensionsSchema = z
+  .object({
+    invoicePeriod: z
+      .object({
+        startDate: z.string().optional().describe('Period start date (YYYY-MM-DD)'),
+        endDate: z.string().optional().describe('Period end date (YYYY-MM-DD)'),
+        descriptionCode: z.string().optional().describe('Period description code (e.g. "35")'),
+      })
+      .optional()
+      .describe('Invoice billing period (BT-73/BT-74/BT-8)'),
+    delivery: z
+      .object({
+        actualDeliveryDate: z.string().optional().describe('Actual delivery date (YYYY-MM-DD)'),
+        deliveryAddress: z
+          .object({
+            streetName: z.string().optional(),
+            cityName: z.string().optional(),
+            countrySubentity: z.string().optional().describe('e.g. "RO-CJ"'),
+            countryCode: z.string().optional().describe('ISO 3166-1 alpha-2 (e.g. "RO")'),
+          })
+          .optional()
+          .describe('Delivery location address'),
+      })
+      .optional()
+      .describe('Delivery information (BG-13)'),
+    allowanceCharges: z
+      .array(
+        z.object({
+          chargeIndicator: z.boolean().describe('false=allowance/discount, true=charge/surcharge'),
+          reasonCode: z.string().optional().describe('Allowance/charge reason code (e.g. "95")'),
+          reason: z.string().optional().describe('Reason text (e.g. "Discount 10%")'),
+          amount: z.string().describe('Amount (numeric string, e.g. "100.00")'),
+          baseAmount: z.string().optional().describe('Base amount for percentage calculation'),
+          multiplierFactorNumeric: z.string().optional().describe('Percentage (e.g. "10.00" for 10%)'),
+          taxCategoryCode: z.string().describe('VAT category: S, Z, E, AE, K, G, or O'),
+          taxRate: z.string().describe('VAT rate (e.g. "19.00")'),
+        })
+      )
+      .optional()
+      .describe('Document-level allowances/charges (max 20). Adjusts TaxTotal and LegalMonetaryTotal in generated UBL XML.'),
+    prepaidAmount: z
+      .string()
+      .optional()
+      .describe('Prepaid amount (numeric string >= 0). Reduces PayableAmount in UBL XML.'),
+    additionalDocumentReferences: z
+      .array(
+        z.object({
+          id: z.string().describe('Reference identifier (max 200 chars)'),
+          documentTypeCode: z.string().optional().describe('Document type code (e.g. "916")'),
+          documentDescription: z.string().optional().describe('Description (e.g. "Timesheet")'),
+        })
+      )
+      .optional()
+      .describe('Additional document references (max 10)'),
+  })
+  .optional()
+  .describe(
+    'UBL extension fields for advanced e-Factura compliance. These map directly to UBL XML elements not covered by the standard invoice fields.'
+  );
+
 const lineItemSchema = z.object({
   description: z.string().describe('Line item description (product or service name)'),
   quantity: z.number().describe('Quantity of items'),
@@ -29,6 +128,7 @@ const lineItemSchema = z.object({
     .optional()
     .describe('Whether unitPrice already includes VAT (default: false)'),
   productCode: z.string().optional().describe('Product code or SKU for reference'),
+  ublExtensions: lineUblExtensionsSchema,
 });
 
 function getCompanyId(params: Record<string, unknown>): string | null {
@@ -293,6 +393,7 @@ export const tools = [
         .enum(['bank_transfer', 'cash', 'card', 'cheque', 'other'])
         .optional()
         .describe('Payment method: bank_transfer (default), cash, card, cheque, other'),
+      ublExtensions: documentUblExtensionsSchema,
       lines: z
         .array(lineItemSchema)
         .describe('Invoice line items (at least one required)'),
@@ -376,6 +477,7 @@ export const tools = [
         .enum(['bank_transfer', 'cash', 'card', 'cheque', 'other'])
         .optional()
         .describe('Payment method: bank_transfer, cash, card, cheque, other'),
+      ublExtensions: documentUblExtensionsSchema,
       lines: z
         .array(lineItemSchema)
         .optional()
