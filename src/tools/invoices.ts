@@ -285,6 +285,10 @@ export const tools = [
         .boolean()
         .optional()
         .describe('Auto-apply VAT rules (reverse charge for VIES-valid EU clients, OSS destination rate for non-VIES EU clients). Default: false.'),
+      vatIncluded: z
+        .boolean()
+        .optional()
+        .describe('When used with autoApplyVatRules, sets whether unit prices include VAT on all lines. Ensures correct totals after VAT rules change rates.'),
       lines: z
         .array(lineItemSchema)
         .describe('Invoice line items (at least one required)'),
@@ -356,6 +360,14 @@ export const tools = [
         .enum(['ro', 'en', 'de', 'fr'])
         .optional()
         .describe('Document language for PDF generation (default: ro)'),
+      autoApplyVatRules: z
+        .boolean()
+        .optional()
+        .describe('Auto-apply VAT rules (reverse charge for VIES-valid EU clients, OSS destination rate for non-VIES EU clients). Default: false.'),
+      vatIncluded: z
+        .boolean()
+        .optional()
+        .describe('When used with autoApplyVatRules, sets whether unit prices include VAT on all lines. Ensures correct totals after VAT rules change rates.'),
       lines: z
         .array(lineItemSchema)
         .optional()
