@@ -289,6 +289,10 @@ export const tools = [
         .boolean()
         .optional()
         .describe('When used with autoApplyVatRules, sets whether unit prices include VAT on all lines. Ensures correct totals after VAT rules change rates.'),
+      paymentMethod: z
+        .enum(['bank_transfer', 'cash', 'card', 'cheque', 'other'])
+        .optional()
+        .describe('Payment method: bank_transfer (default), cash, card, cheque, other'),
       lines: z
         .array(lineItemSchema)
         .describe('Invoice line items (at least one required)'),
@@ -368,6 +372,10 @@ export const tools = [
         .boolean()
         .optional()
         .describe('When used with autoApplyVatRules, sets whether unit prices include VAT on all lines. Ensures correct totals after VAT rules change rates.'),
+      paymentMethod: z
+        .enum(['bank_transfer', 'cash', 'card', 'cheque', 'other'])
+        .optional()
+        .describe('Payment method: bank_transfer, cash, card, cheque, other'),
       lines: z
         .array(lineItemSchema)
         .optional()

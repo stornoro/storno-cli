@@ -306,6 +306,7 @@ Create a new draft invoice. Requires a clientId and at least one line item. The 
 | `penaltyGraceDays` | number | No | Grace period in days before penalty starts applying |
 | `autoApplyVatRules` | boolean | No | Auto-apply VAT rules: reverse charge for VIES-valid EU clients, OSS destination rate for non-VIES EU clients (default: false) |
 | `vatIncluded` | boolean | No | When used with `autoApplyVatRules`, sets whether unit prices include VAT on all lines |
+| `paymentMethod` | enum | No | Payment method: `bank_transfer` (default), `cash`, `card`, `cheque`, `other` |
 | `lines` | array | Yes | Invoice line items (at least one required) |
 
 ### `invoices_update`
@@ -344,6 +345,7 @@ Update an existing draft invoice. Only invoices with status "draft" can be updat
 | `penaltyGraceDays` | number | No | Grace period before penalty applies |
 | `autoApplyVatRules` | boolean | No | Auto-apply VAT rules: reverse charge for VIES-valid EU clients, OSS destination rate for non-VIES EU clients (default: false) |
 | `vatIncluded` | boolean | No | When used with `autoApplyVatRules`, sets whether unit prices include VAT on all lines |
+| `paymentMethod` | enum | No | Payment method: `bank_transfer`, `cash`, `card`, `cheque`, `other` |
 | `lines` | array | No | Invoice line items. WARNING: replaces all existing lines — include every line you want to keep. |
 
 ### `invoices_delete`
