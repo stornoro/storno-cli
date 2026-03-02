@@ -304,6 +304,7 @@ Create a new draft invoice. Requires a clientId and at least one line item. The 
 | `penaltyEnabled` | boolean | No | Enable late payment penalty (default: false) |
 | `penaltyPercentPerDay` | number | No | Daily penalty percentage (e.g., 0.05 for 0.05% per day) |
 | `penaltyGraceDays` | number | No | Grace period in days before penalty starts applying |
+| `autoApplyVatRules` | boolean | No | Auto-apply VAT rules: reverse charge for VIES-valid EU clients, OSS destination rate for non-VIES EU clients (default: false) |
 | `lines` | array | Yes | Invoice line items (at least one required) |
 
 ### `invoices_update`
@@ -793,6 +794,17 @@ Lookup company details by CUI in ANAF without creating a client. Returns pre-fil
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `cui` | string | Yes | CUI/CIF to look up (with or without RO prefix) |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+### `clients_vies_lookup`
+
+Validate a VAT code against the EU VIES system. Returns whether the VAT number is valid and the registered company name/address. Use this to verify EU intra-community VAT numbers before applying reverse charge.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `vatCode` | string | Yes | Full EU VAT code including country prefix (e.g., DE123456789, FR12345678901) |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `clients_from_registry`

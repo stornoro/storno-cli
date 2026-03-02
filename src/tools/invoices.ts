@@ -281,6 +281,10 @@ export const tools = [
         .enum(['ro', 'en', 'de', 'fr'])
         .optional()
         .describe('Document language for PDF generation (default: ro)'),
+      autoApplyVatRules: z
+        .boolean()
+        .optional()
+        .describe('Auto-apply VAT rules (reverse charge for VIES-valid EU clients, OSS destination rate for non-VIES EU clients). Default: false.'),
       lines: z
         .array(lineItemSchema)
         .describe('Invoice line items (at least one required)'),

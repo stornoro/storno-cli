@@ -265,6 +265,33 @@ export const tools = [
   },
 
   {
+    name: 'clients_vies_lookup',
+    description:
+      'Validate a VAT code against the EU VIES system. Returns whether the VAT number is valid and the registered company name/address. Use this to verify EU intra-community VAT numbers before applying reverse charge.',
+    inputSchema: z.object({
+      vatCode: z
+        .string()
+        .describe('Full EU VAT code including country prefix (e.g., DE123456789, FR12345678901)'),
+      companyId: z
+        .string()
+        .optional()
+        .describe('Company UUID override (uses active company if not set)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const companyId = getCompanyId(params);
+      if (!companyId) return noCompanySelected();
+
+      const { vatCode } = params as { vatCode: string };
+      const result = await apiRequest('/api/v1/clients/vies-lookup', {
+        companyId,
+        query: { vatCode },
+      });
+      return formatResponse(result);
+    },
+  },
+
+  {
     name: 'clients_from_registry',
     description:
       'Create a client by looking up a CUI in the ANAF registry and auto-filling all available details (name, address, VAT status, registration number, etc.). Use this instead of clients_create when you only have a CUI and want the company details resolved automatically.',
