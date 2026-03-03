@@ -93,15 +93,14 @@ export async function apiRequest<T = unknown>(
     ...headers,
   };
 
-  // Per-session token (SaaS mode) takes precedence over global config token
+  // config.token returns the per-session token (SaaS mode) when available
   const sessionToken = sessionContext.getStore()?.token;
-  const effectiveToken = sessionToken || config.token;
 
-  if (!noAuth && effectiveToken) {
+  if (!noAuth && config.token) {
     // API keys (e.g. "af_...") must be sent without "Bearer " prefix;
     // the backend's ApiKeyAuthenticator skips Bearer-prefixed tokens.
-    const isApiKey = effectiveToken.startsWith('af_');
-    reqHeaders['Authorization'] = isApiKey ? effectiveToken : `Bearer ${effectiveToken}`;
+    const isApiKey = config.token.startsWith('af_');
+    reqHeaders['Authorization'] = isApiKey ? config.token : `Bearer ${config.token}`;
   }
 
   const effectiveCompanyId = companyId || config.companyId;

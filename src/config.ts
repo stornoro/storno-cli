@@ -29,6 +29,19 @@ export interface Config {
 
 let _config: Config | null = null;
 
+// Lazy import to avoid circular dependency — context.ts imports nothing from config.ts
+let _sessionContext: typeof import('./context.js').sessionContext | null = null;
+async function getSessionContext() {
+  if (!_sessionContext) {
+    _sessionContext = (await import('./context.js')).sessionContext;
+  }
+  return _sessionContext;
+}
+
+// Eagerly resolve so the proxy can use it synchronously
+let _resolvedSessionContext: typeof import('./context.js').sessionContext | null = null;
+import('./context.js').then((m) => { _resolvedSessionContext = m.sessionContext; });
+
 export function getConfig(): Config {
   if (!_config) {
     _config = {
@@ -43,6 +56,13 @@ export function getConfig(): Config {
       oauthBaseUrl: process.env.STORNO_OAUTH_BASE_URL || null,
       oauthClientId: process.env.STORNO_OAUTH_CLIENT_ID || null,
     };
+  }
+
+  // Return a proxy that overlays the per-session token (SaaS mode)
+  // so all existing `getConfig().token` checks work without changes.
+  const sessionToken = _resolvedSessionContext?.getStore()?.token;
+  if (sessionToken) {
+    return { ..._config, token: sessionToken };
   }
   return _config;
 }
