@@ -10,6 +10,8 @@
  *   STORNO_PASSWORD      — Password for auto-login (optional, used if no token)
  *   STORNO_HTTP_PORT     — If set, starts Streamable HTTP transport on this port
  *   STORNO_HTTP_HOST     — HTTP bind address (default: 127.0.0.1)
+ *   STORNO_OAUTH_BASE_URL — OAuth2 base URL for SaaS protected-resource metadata
+ *   STORNO_OAUTH_CLIENT_ID — OAuth2 client ID for SaaS mode
  */
 
 export interface Config {
@@ -21,6 +23,8 @@ export interface Config {
   password: string | null;
   httpPort: number | null;
   httpHost: string;
+  oauthBaseUrl: string | null;
+  oauthClientId: string | null;
 }
 
 let _config: Config | null = null;
@@ -36,6 +40,8 @@ export function getConfig(): Config {
       password: process.env.STORNO_PASSWORD || null,
       httpPort: process.env.STORNO_HTTP_PORT ? parseInt(process.env.STORNO_HTTP_PORT, 10) : null,
       httpHost: process.env.STORNO_HTTP_HOST || '127.0.0.1',
+      oauthBaseUrl: process.env.STORNO_OAUTH_BASE_URL || null,
+      oauthClientId: process.env.STORNO_OAUTH_CLIENT_ID || null,
     };
   }
   return _config;

@@ -10,6 +10,7 @@ import { z } from 'zod';
 
 import { getConfig, updateConfig } from './config.js';
 import { apiRequest } from './client.js';
+import { sessionContext } from './context.js';
 
 // Import all tool modules
 import { tools as authTools } from './tools/auth.js';
@@ -117,19 +118,28 @@ export function createMcpServer(): McpServer {
       tool.name,
       tool.description,
       tool.inputSchema.shape,
-      async (params) => {
-        try {
-          const result = await tool.handler(params as Record<string, unknown>);
-          return {
-            content: [{ type: 'text' as const, text: result }],
-          };
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          return {
-            content: [{ type: 'text' as const, text: `Unexpected error: ${message}` }],
-            isError: true,
-          };
+      async (params, extra) => {
+        const run = async () => {
+          try {
+            const result = await tool.handler(params as Record<string, unknown>);
+            return {
+              content: [{ type: 'text' as const, text: result }],
+            };
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            return {
+              content: [{ type: 'text' as const, text: `Unexpected error: ${message}` }],
+              isError: true,
+            };
+          }
+        };
+
+        // If the session carries its own auth token, run inside AsyncLocalStorage
+        const token = (extra.authInfo as { token?: string } | undefined)?.token;
+        if (token) {
+          return sessionContext.run({ token }, run);
         }
+        return run();
       }
     );
   }

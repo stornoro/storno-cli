@@ -11,6 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { getConfig, updateConfig } from './config.js';
+import { sessionContext } from './context.js';
 
 export interface ApiResponse<T = unknown> {
   ok: boolean;
@@ -92,11 +93,15 @@ export async function apiRequest<T = unknown>(
     ...headers,
   };
 
-  if (!noAuth && config.token) {
+  // Per-session token (SaaS mode) takes precedence over global config token
+  const sessionToken = sessionContext.getStore()?.token;
+  const effectiveToken = sessionToken || config.token;
+
+  if (!noAuth && effectiveToken) {
     // API keys (e.g. "af_...") must be sent without "Bearer " prefix;
     // the backend's ApiKeyAuthenticator skips Bearer-prefixed tokens.
-    const isApiKey = config.token.startsWith('af_');
-    reqHeaders['Authorization'] = isApiKey ? config.token : `Bearer ${config.token}`;
+    const isApiKey = effectiveToken.startsWith('af_');
+    reqHeaders['Authorization'] = isApiKey ? effectiveToken : `Bearer ${effectiveToken}`;
   }
 
   const effectiveCompanyId = companyId || config.companyId;
@@ -142,8 +147,8 @@ export async function apiRequest<T = unknown>(
     };
   }
 
-  // Auto-refresh on 401
-  if (res.status === 401 && !noAuth && config.refreshToken) {
+  // Auto-refresh on 401 (skip when using a per-session token — we don't have its refresh token)
+  if (res.status === 401 && !noAuth && !sessionToken && config.refreshToken) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       reqHeaders['Authorization'] = `Bearer ${getConfig().token}`;
