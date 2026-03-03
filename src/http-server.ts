@@ -15,6 +15,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { createMcpServer } from './server.js';
 import { getConfig } from './config.js';
+import { getLandingHtml } from './landing.js';
 
 interface Session {
   transport: StreamableHTTPServerTransport;
@@ -292,6 +293,34 @@ export function startHttpServer(port: number, host: string): void {
       }
       res.writeHead(405);
       res.end('Method Not Allowed');
+      return;
+    }
+
+    // Landing page
+    if (url.pathname === '/' && req.method === 'GET') {
+      const baseUrl = getPublicBaseUrl(req);
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(getLandingHtml(baseUrl));
+      return;
+    }
+
+    // Status API
+    if (url.pathname === '/api/status' && req.method === 'GET') {
+      const status = {
+        server: 'storno-mcp',
+        version: '1.0.9',
+        activeSessions: sessions.size,
+        uptime: process.uptime(),
+      };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(status));
+      return;
+    }
+
+    // Favicon (avoid 404 noise)
+    if (url.pathname === '/favicon.ico') {
+      res.writeHead(204);
+      res.end();
       return;
     }
 
