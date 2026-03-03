@@ -16,7 +16,55 @@ A **Model Context Protocol (MCP) server** that exposes the entire [Storno.ro](ht
 
 ## Quick Start
 
-### 1. Install
+### Hosted Server (recommended)
+
+Storno hosts a public MCP server at **https://mcp.storno.ro/mcp** with OAuth authentication — no API keys or tokens to manage.
+
+Visit **[mcp.storno.ro](https://mcp.storno.ro)** for setup instructions and a one-click "Add to Claude" button.
+
+**Claude (claude.ai):**
+
+1. Copy the URL: `https://mcp.storno.ro/mcp`
+2. Go to [claude.ai/settings/connectors](https://claude.ai/settings/connectors)
+3. Click "Add" and paste the URL
+4. Authorize via OAuth
+
+**Claude Code:**
+
+```bash
+claude mcp add storno --transport http https://mcp.storno.ro/mcp
+```
+
+**Cursor / Windsurf:**
+
+```json
+{
+  "mcpServers": {
+    "storno": {
+      "url": "https://mcp.storno.ro/mcp"
+    }
+  }
+}
+```
+
+**Claude Desktop:**
+
+```json
+{
+  "mcpServers": {
+    "storno": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.storno.ro/mcp"]
+    }
+  }
+}
+```
+
+### Self-hosted / Token-based Setup
+
+If you prefer to use a JWT token directly (e.g. for self-hosted Storno instances):
+
+#### 1. Install
 
 ```bash
 npm install -g storno-cli
@@ -24,7 +72,7 @@ npm install -g storno-cli
 
 Or use directly with `npx` — no install needed.
 
-### 2. Configure for Claude Code
+#### 2. Configure for Claude Code
 
 Add to your project's `.claude/settings.json` or global `~/.claude/settings.json`:
 
@@ -43,7 +91,7 @@ Add to your project's `.claude/settings.json` or global `~/.claude/settings.json
 }
 ```
 
-### 3. Configure for Cursor
+#### 3. Configure for Cursor
 
 Add to `.cursor/mcp.json`:
 
@@ -62,7 +110,7 @@ Add to `.cursor/mcp.json`:
 }
 ```
 
-### 4. Configure for Claude Desktop
+#### 4. Configure for Claude Desktop
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
