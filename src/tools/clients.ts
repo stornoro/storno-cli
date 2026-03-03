@@ -115,6 +115,8 @@ export const tools = [
         .describe('Default payment term in days for invoices issued to this client'),
       contactPerson: z.string().optional().describe('Name of the primary contact person'),
       notes: z.string().optional().describe('Internal notes about the client'),
+      idNumber: z.string().optional().describe('Client identification number (personal ID, passport, etc.)'),
+      currency: z.string().optional().describe('Preferred currency for this client (ISO 4217, e.g., EUR, USD, RON)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
@@ -170,6 +172,8 @@ export const tools = [
         .describe('Default payment term in days for invoices issued to this client'),
       contactPerson: z.string().optional().describe('Name of the primary contact person'),
       notes: z.string().optional().describe('Internal notes about the client'),
+      idNumber: z.string().optional().describe('Client identification number (personal ID, passport, etc.)'),
+      currency: z.string().optional().describe('Preferred currency for this client (ISO 4217, e.g., EUR, USD, RON)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();

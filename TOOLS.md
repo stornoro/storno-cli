@@ -738,6 +738,8 @@ Create a new client manually. Requires at least a name. If a CUI is provided and
 | `defaultPaymentTermDays` | number | No | Default payment term in days |
 | `contactPerson` | string | No | Contact person name |
 | `notes` | string | No | Internal notes |
+| `idNumber` | string | No | Client identification number (personal ID, passport, etc.) |
+| `currency` | string | No | Preferred currency (ISO 4217, e.g., EUR, USD, RON) |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `clients_update`
@@ -768,6 +770,8 @@ Update an existing client. Only provided fields are updated; omitted fields rema
 | `defaultPaymentTermDays` | number | No | Default payment term in days |
 | `contactPerson` | string | No | Contact person name |
 | `notes` | string | No | Internal notes |
+| `idNumber` | string | No | Client identification number (personal ID, passport, etc.) |
+| `currency` | string | No | Preferred currency (ISO 4217, e.g., EUR, USD, RON) |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `clients_delete`
