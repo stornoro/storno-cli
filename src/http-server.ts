@@ -199,6 +199,7 @@ function handleAuthorizationServerMetadata(req: IncomingMessage, res: ServerResp
     issuer: baseUrl,
     authorization_endpoint: `${config.oauthBaseUrl}/oauth/authorize`,
     token_endpoint: `${config.baseUrl}/api/v1/oauth2/token`,
+    registration_endpoint: `${baseUrl}/oauth/register`,
     revocation_endpoint: `${config.baseUrl}/api/v1/oauth2/revoke`,
     response_types_supported: ['code'],
     grant_types_supported: ['authorization_code', 'refresh_token'],
@@ -216,6 +217,40 @@ function handleAuthorizationServerMetadata(req: IncomingMessage, res: ServerResp
 
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(metadata));
+}
+
+/**
+ * RFC 7591 — Dynamic Client Registration (simplified).
+ * Always returns the pre-created public OAuth2 client.
+ * MCP clients like mcp-remote require this endpoint to exist.
+ */
+async function handleOAuthRegister(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const config = getConfig();
+  if (!config.oauthClientId) {
+    res.writeHead(404);
+    res.end('Not Found');
+    return;
+  }
+
+  // Read and ignore the body (required by the spec)
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await readBody(req)) as Record<string, unknown>;
+  } catch {
+    // ignore parse errors
+  }
+
+  const response = {
+    client_id: config.oauthClientId,
+    client_name: 'Storno MCP',
+    redirect_uris: body.redirect_uris || [],
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+    token_endpoint_auth_method: 'none',
+  };
+
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(response));
 }
 
 export function startHttpServer(port: number, host: string): void {
@@ -237,6 +272,22 @@ export function startHttpServer(port: number, host: string): void {
         } else {
           handleAuthorizationServerMetadata(req, res);
         }
+        return;
+      }
+      res.writeHead(405);
+      res.end('Method Not Allowed');
+      return;
+    }
+
+    // Dynamic client registration endpoint
+    if (url.pathname === '/oauth/register') {
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+      if (req.method === 'POST') {
+        await handleOAuthRegister(req, res);
         return;
       }
       res.writeHead(405);

@@ -1,6 +1,6 @@
 {
   "name": "storno-cli",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "MCP server for the Storno.ro e-invoicing API — enables AI tools (Claude, Cursor, Windsurf) to manage invoices, clients, companies, and the full e-Factura workflow",
   "type": "module",
   "bin": {
