@@ -8,6 +8,8 @@
  *   STORNO_COMPANY_ID    — Default company UUID (used as X-Company header)
  *   STORNO_EMAIL         — Email for auto-login (optional, used if no token)
  *   STORNO_PASSWORD      — Password for auto-login (optional, used if no token)
+ *   STORNO_HTTP_PORT     — If set, starts Streamable HTTP transport on this port
+ *   STORNO_HTTP_HOST     — HTTP bind address (default: 127.0.0.1)
  */
 
 export interface Config {
@@ -17,6 +19,8 @@ export interface Config {
   companyId: string | null;
   email: string | null;
   password: string | null;
+  httpPort: number | null;
+  httpHost: string;
 }
 
 let _config: Config | null = null;
@@ -30,6 +34,8 @@ export function getConfig(): Config {
       companyId: process.env.STORNO_COMPANY_ID || null,
       email: process.env.STORNO_EMAIL || null,
       password: process.env.STORNO_PASSWORD || null,
+      httpPort: process.env.STORNO_HTTP_PORT ? parseInt(process.env.STORNO_HTTP_PORT, 10) : null,
+      httpHost: process.env.STORNO_HTTP_HOST || '127.0.0.1',
     };
   }
   return _config;

@@ -91,6 +91,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 | `STORNO_COMPANY_ID` | No* | — | Default company UUID |
 | `STORNO_EMAIL` | No | — | Email for auto-login (if no token) |
 | `STORNO_PASSWORD` | No | — | Password for auto-login (if no token) |
+| `STORNO_HTTP_PORT` | No | — | If set, starts Streamable HTTP transport on this port |
+| `STORNO_HTTP_HOST` | No | `127.0.0.1` | HTTP bind address (used with `STORNO_HTTP_PORT`) |
 
 \* You can authenticate at runtime using the `auth_login` tool instead.
 
@@ -216,12 +218,45 @@ AI: [calls invoices_list with from=2024-01-01, to=2024-01-31]
     - 18 issued, 3 paid, 2 overdue
 ```
 
+## HTTP Transport
+
+By default, storno-cli uses **stdio transport** for local MCP clients. Set `STORNO_HTTP_PORT` to enable **Streamable HTTP transport** for remote access.
+
+```bash
+# Start HTTP server on port 3000
+STORNO_TOKEN=your-token STORNO_COMPANY_ID=your-company-uuid \
+  STORNO_HTTP_PORT=3000 node dist/index.js
+
+# Bind to all interfaces (for production behind a reverse proxy)
+STORNO_HTTP_PORT=3000 STORNO_HTTP_HOST=0.0.0.0 node dist/index.js
+```
+
+The server exposes a single `/mcp` endpoint supporting POST, GET, and DELETE per the MCP Streamable HTTP spec. Each client connection creates an isolated stateful session.
+
+**Initialize a session:**
+
+```bash
+curl -X POST http://127.0.0.1:3000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
+# Response includes mcp-session-id header
+```
+
+**Call a tool:**
+
+```bash
+curl -X POST http://127.0.0.1:3000/mcp \
+  -H "Content-Type: application/json" \
+  -H "mcp-session-id: <session-id>" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"system_health","arguments":{}}}'
+```
+
 ## Development
 
 ```bash
 npm run dev      # Watch mode (recompile on changes)
 npm run build    # Production build
-npm run start    # Start MCP server
+npm run start    # Start MCP server (stdio)
 ```
 
 ## Architecture
@@ -229,7 +264,9 @@ npm run start    # Start MCP server
 ```
 storno-cli/
 ├── src/
-│   ├── index.ts          # MCP server entry point (stdio transport)
+│   ├── index.ts          # Entry point — dispatches to stdio or HTTP transport
+│   ├── server.ts         # McpServer factory (creates server + registers all tools)
+│   ├── http-server.ts    # Streamable HTTP transport with session management
 │   ├── config.ts         # Environment configuration
 │   ├── client.ts         # HTTP client with JWT auth + auto-refresh
 │   ├── tools/            # 40 tool domain files (237 tools total)
