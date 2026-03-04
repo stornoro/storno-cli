@@ -268,6 +268,14 @@ export const tools = [
         .string()
         .optional()
         .describe('Receiver tax ID / CIF (used together with receiverName when no client entity exists)'),
+      documentType: z
+        .enum(['invoice', 'credit_note'])
+        .optional()
+        .describe('Document type (default: invoice)'),
+      parentDocumentId: z
+        .string()
+        .optional()
+        .describe('Parent document UUID (required for credit notes / refunds)'),
       issueDate: z
         .string()
         .describe('Invoice issue date in ISO 8601 format (YYYY-MM-DD)'),
@@ -349,6 +357,63 @@ export const tools = [
         .string()
         .optional()
         .describe('Deputy vehicle registration number'),
+      tvaLaIncasare: z
+        .boolean()
+        .optional()
+        .describe('VAT on collection / TVA la încasare (default: false)'),
+      platitorTva: z
+        .boolean()
+        .optional()
+        .describe('Whether sender is VAT payer (default: false)'),
+      plataOnline: z
+        .boolean()
+        .optional()
+        .describe('Enable online payment via Stripe (default: from company settings)'),
+      showClientBalance: z
+        .boolean()
+        .optional()
+        .describe('Show client balance on invoice (default: false)'),
+      idempotencyKey: z
+        .string()
+        .optional()
+        .describe('Idempotency key to prevent duplicate creation'),
+      // e-Factura BT fields (CIUS-RO schematron compliance)
+      taxPointDate: z
+        .string()
+        .optional()
+        .describe('Tax point date if different from issue date (YYYY-MM-DD)'),
+      taxPointDateCode: z
+        .string()
+        .optional()
+        .describe('Tax point date code'),
+      buyerReference: z
+        .string()
+        .optional()
+        .describe('Buyer reference identifier (BT-10)'),
+      receivingAdviceReference: z
+        .string()
+        .optional()
+        .describe('Receiving advice reference'),
+      despatchAdviceReference: z
+        .string()
+        .optional()
+        .describe('Despatch advice reference'),
+      tenderOrLotReference: z
+        .string()
+        .optional()
+        .describe('Tender or lot reference'),
+      invoicedObjectIdentifier: z
+        .string()
+        .optional()
+        .describe('Invoiced object identifier'),
+      buyerAccountingReference: z
+        .string()
+        .optional()
+        .describe('Buyer accounting reference'),
+      businessProcessType: z
+        .string()
+        .optional()
+        .describe('Business process type (e.g., "urn:cen.eu:en16931:2017#compliant#urn:efactura.mfinante.ro:CIUS-RO:1.0.1")'),
       collect: z
         .union([
           z.boolean(),
@@ -425,6 +490,10 @@ export const tools = [
         .optional()
         .describe('Company UUID override (uses active company if not set)'),
       clientId: z.string().optional().describe('Client UUID'),
+      receiverName: z.string().optional().describe('Receiver name (when no client entity exists)'),
+      receiverCif: z.string().optional().describe('Receiver tax ID / CIF'),
+      documentType: z.enum(['invoice', 'credit_note']).optional().describe('Document type'),
+      parentDocumentId: z.string().optional().describe('Parent document UUID (for credit notes)'),
       seriesId: z.string().optional().describe('Invoice series UUID'),
       issueDate: z
         .string()
@@ -451,6 +520,20 @@ export const tools = [
       deputyName: z.string().optional().describe('Deputy/representative name'),
       deputyIdentityCard: z.string().optional().describe('Deputy ID card number'),
       deputyAuto: z.string().optional().describe('Deputy vehicle registration'),
+      tvaLaIncasare: z.boolean().optional().describe('VAT on collection / TVA la încasare'),
+      platitorTva: z.boolean().optional().describe('Whether sender is VAT payer'),
+      plataOnline: z.boolean().optional().describe('Enable online payment via Stripe'),
+      showClientBalance: z.boolean().optional().describe('Show client balance on invoice'),
+      // e-Factura BT fields
+      taxPointDate: z.string().optional().describe('Tax point date (YYYY-MM-DD)'),
+      taxPointDateCode: z.string().optional().describe('Tax point date code'),
+      buyerReference: z.string().optional().describe('Buyer reference identifier'),
+      receivingAdviceReference: z.string().optional().describe('Receiving advice reference'),
+      despatchAdviceReference: z.string().optional().describe('Despatch advice reference'),
+      tenderOrLotReference: z.string().optional().describe('Tender or lot reference'),
+      invoicedObjectIdentifier: z.string().optional().describe('Invoiced object identifier'),
+      buyerAccountingReference: z.string().optional().describe('Buyer accounting reference'),
+      businessProcessType: z.string().optional().describe('Business process type'),
       penaltyEnabled: z.boolean().optional().describe('Enable late payment penalty'),
       penaltyPercentPerDay: z
         .number()

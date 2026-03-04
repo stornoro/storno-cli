@@ -279,7 +279,11 @@ Create a new draft invoice. Requires a clientId and at least one line item. The 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
-| `clientId` | string | Yes | Client UUID (from clients_list) |
+| `clientId` | string | No | Client UUID (from clients_list). Either `clientId` or `receiverName` should be provided |
+| `receiverName` | string | No | Receiver name (when no client entity exists) |
+| `receiverCif` | string | No | Receiver tax ID / CIF (used with `receiverName`) |
+| `documentType` | string | No | Document type: `invoice` (default), `credit_note` |
+| `parentDocumentId` | string | No | Parent document UUID (required for credit notes / refunds) |
 | `issueDate` | string | Yes | Invoice issue date in ISO 8601 format (YYYY-MM-DD) |
 | `dueDate` | string | No | Payment due date in ISO 8601 format (YYYY-MM-DD) |
 | `seriesId` | string | No | Invoice series UUID (from document_series_list). Uses default if not provided. |
@@ -300,7 +304,12 @@ Create a new draft invoice. Requires a clientId and at least one line item. The 
 | `deputyName` | string | No | Deputy/representative name |
 | `deputyIdentityCard` | string | No | Deputy ID card number |
 | `deputyAuto` | string | No | Deputy vehicle registration number |
-| `collect` | boolean | No | Create an immediate full payment record (default: false) |
+| `tvaLaIncasare` | boolean | No | VAT on collection / TVA la încasare (default: false) |
+| `platitorTva` | boolean | No | Whether sender is VAT payer (default: false) |
+| `plataOnline` | boolean | No | Enable online payment via Stripe (default: from company settings) |
+| `showClientBalance` | boolean | No | Show client balance on invoice (default: false) |
+| `idempotencyKey` | string | No | Idempotency key to prevent duplicate creation |
+| `collect` | boolean/object | No | Create an immediate payment. Pass `true` for full payment with defaults, or object with `value`, `type`, `issueDate`, `documentNumber`, `mentions` |
 | `penaltyEnabled` | boolean | No | Enable late payment penalty (default: false) |
 | `penaltyPercentPerDay` | number | No | Daily penalty percentage (e.g., 0.05 for 0.05% per day) |
 | `penaltyGraceDays` | number | No | Grace period in days before penalty starts applying |
@@ -309,6 +318,20 @@ Create a new draft invoice. Requires a clientId and at least one line item. The 
 | `paymentMethod` | enum | No | Payment method: `bank_transfer` (default), `cash`, `card`, `cheque`, `other` |
 | `ublExtensions` | object | No | UBL extension fields for advanced e-Factura compliance. Supports: `invoicePeriod` (startDate, endDate, descriptionCode), `delivery` (actualDeliveryDate, deliveryAddress), `allowanceCharges` (array, max 20 — each with chargeIndicator, amount, taxCategoryCode, taxRate), `prepaidAmount`, `additionalDocumentReferences` (array, max 10 — each with id, documentTypeCode, documentDescription) |
 | `lines` | array | Yes | Invoice line items (at least one required). Each line may include `ublExtensions` with: `invoicePeriod`, `allowanceCharges` (max 10), `additionalItemProperties` (max 20, name/value), `originCountry` |
+
+**e-Factura BT fields (CIUS-RO schematron compliance):**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `taxPointDate` | string | No | Tax point date if different from issue date (YYYY-MM-DD) |
+| `taxPointDateCode` | string | No | Tax point date code |
+| `buyerReference` | string | No | Buyer reference identifier (BT-10) |
+| `receivingAdviceReference` | string | No | Receiving advice reference |
+| `despatchAdviceReference` | string | No | Despatch advice reference |
+| `tenderOrLotReference` | string | No | Tender or lot reference |
+| `invoicedObjectIdentifier` | string | No | Invoiced object identifier |
+| `buyerAccountingReference` | string | No | Buyer accounting reference |
+| `businessProcessType` | string | No | Business process type |
 
 ### `invoices_update`
 
@@ -321,6 +344,10 @@ Update an existing draft invoice. Only invoices with status "draft" can be updat
 | `uuid` | string | Yes | Invoice UUID to update |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 | `clientId` | string | No | Client UUID |
+| `receiverName` | string | No | Receiver name (when no client entity exists) |
+| `receiverCif` | string | No | Receiver tax ID / CIF |
+| `documentType` | string | No | Document type: `invoice`, `credit_note` |
+| `parentDocumentId` | string | No | Parent document UUID (for credit notes) |
 | `seriesId` | string | No | Invoice series UUID |
 | `issueDate` | string | No | Invoice issue date (YYYY-MM-DD) |
 | `dueDate` | string | No | Payment due date (YYYY-MM-DD) |
@@ -341,6 +368,10 @@ Update an existing draft invoice. Only invoices with status "draft" can be updat
 | `deputyName` | string | No | Deputy/representative name |
 | `deputyIdentityCard` | string | No | Deputy ID card number |
 | `deputyAuto` | string | No | Deputy vehicle registration |
+| `tvaLaIncasare` | boolean | No | VAT on collection / TVA la încasare |
+| `platitorTva` | boolean | No | Whether sender is VAT payer |
+| `plataOnline` | boolean | No | Enable online payment via Stripe |
+| `showClientBalance` | boolean | No | Show client balance on invoice |
 | `penaltyEnabled` | boolean | No | Enable late payment penalty |
 | `penaltyPercentPerDay` | number | No | Daily penalty percentage |
 | `penaltyGraceDays` | number | No | Grace period before penalty applies |
@@ -349,6 +380,8 @@ Update an existing draft invoice. Only invoices with status "draft" can be updat
 | `paymentMethod` | enum | No | Payment method: `bank_transfer`, `cash`, `card`, `cheque`, `other` |
 | `ublExtensions` | object | No | UBL extension fields (same schema as invoices_create). Pass `null` to clear. |
 | `lines` | array | No | Invoice line items. WARNING: replaces all existing lines — include every line you want to keep. Each line may include `ublExtensions`. |
+
+**e-Factura BT fields:** Same as `invoices_create` (taxPointDate, taxPointDateCode, buyerReference, receivingAdviceReference, despatchAdviceReference, tenderOrLotReference, invoicedObjectIdentifier, buyerAccountingReference, businessProcessType).
 
 ### `invoices_delete`
 
