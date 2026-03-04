@@ -309,7 +309,7 @@ Create a new draft invoice. Requires a clientId and at least one line item. The 
 | `plataOnline` | boolean | No | Enable online payment via Stripe (default: from company settings) |
 | `showClientBalance` | boolean | No | Show client balance on invoice (default: false) |
 | `idempotencyKey` | string | No | Idempotency key to prevent duplicate creation |
-| `collect` | boolean | No | Create an immediate full payment record (default: false) |
+| `collect` | boolean/object | No | Create an immediate payment. Pass `true` for full payment with defaults, or object with `value` (amount, defaults to total), `type` (payment method, defaults to `bank_transfer`), `issueDate` (YYYY-MM-DD), `documentNumber` (reference), `mentions` (notes) |
 | `penaltyEnabled` | boolean | No | Enable late payment penalty (default: false) |
 | `penaltyPercentPerDay` | number | No | Daily penalty percentage (e.g., 0.05 for 0.05% per day) |
 | `penaltyGraceDays` | number | No | Grace period in days before penalty starts applying |
