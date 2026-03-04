@@ -338,6 +338,7 @@ export const tools = [
       body: z.string().optional().describe('Email body text (auto-generated if omitted)'),
       cc: z.array(z.string()).optional().describe('CC email addresses'),
       bcc: z.array(z.string()).optional().describe('BCC email addresses'),
+      templateId: z.string().optional().describe('UUID of email template to use (category: receipt)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const config = getConfig();
@@ -350,6 +351,7 @@ export const tools = [
       if (params.body) body.body = params.body;
       if (params.cc) body.cc = params.cc;
       if (params.bcc) body.bcc = params.bcc;
+      if (params.templateId) body.templateId = params.templateId;
 
       const res = await apiRequest(`/api/v1/receipts/${params.uuid}/email`, {
         method: 'POST',

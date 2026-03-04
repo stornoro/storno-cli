@@ -49,6 +49,13 @@ const deliveryLineItemSchema = z.object({
   vatRateId: z.string().describe('UUID of the VAT rate'),
   unitOfMeasure: z.string().optional().describe('Unit of measure (e.g., piece, kg, hour)'),
   productId: z.string().optional().describe('UUID of related product'),
+  // e-Transport line fields (required for schematron validation)
+  tariffCode: z.string().optional().describe('8-digit HS/CN tariff code (e.g., "84131100"). Required for e-Transport (BR-206)'),
+  purposeCode: z.number().optional().describe('Purpose code per schematron BR-070. For TTN (opType 30): 101 (commercial), 704, 705, 9901 (other)'),
+  unitOfMeasureCode: z.string().optional().describe('UN/ECE Rec 20 unit of measure code (e.g., "H87"=piece, "KGM"=kg, "SET"=set, "MTR"=meter). Required for e-Transport'),
+  netWeight: z.string().optional().describe('Net weight in kg as decimal string (e.g., "120.00"). Required for e-Transport (BR-207)'),
+  grossWeight: z.string().optional().describe('Gross weight in kg as decimal string (e.g., "140.00")'),
+  valueWithoutVat: z.string().optional().describe('Line value without VAT as decimal string (e.g., "15000.00"). Required for e-Transport (BR-208)'),
 });
 
 export const tools = [
@@ -134,6 +141,30 @@ export const tools = [
       notes: z.string().optional().describe('Public notes about the delivery'),
       mentions: z.string().optional().describe('Additional mentions or instructions'),
       internalNote: z.string().optional().describe('Internal note (not visible to client)'),
+      // e-Transport header fields (required for ANAF e-Transport submission)
+      etransportOperationType: z.number().optional().describe('Operation type code: 10 (intra-community acquisition), 12 (intra-community delivery), 20 (transaction in national territory between two different entities with goods moving domestically), 30 (domestic transport document TTN), 40 (import), 50 (export), 60 (goods not released for circulation)'),
+      etransportPostIncident: z.boolean().optional().describe('Post-incident declaration (after the transport was completed)'),
+      etransportVehicleNumber: z.string().optional().describe('Vehicle registration number (e.g., "BC01ABC"). Schematron BR-031: 3-20 uppercase alphanumeric chars'),
+      etransportTrailer1: z.string().optional().describe('First trailer registration number'),
+      etransportTrailer2: z.string().optional().describe('Second trailer registration number'),
+      etransportTransporterCountry: z.string().optional().describe('Transporter country code (ISO 3166-1 alpha-2, e.g., "RO"). For TTN (opType 30) must be "RO" per BR-005'),
+      etransportTransporterCode: z.string().optional().describe('Transporter CUI/CIF (numeric only, e.g., "31385365"). Must match ANAF format per BR-002'),
+      etransportTransporterName: z.string().optional().describe('Transporter legal name (e.g., "UNIVERSAL EQUIPMENT PROJECTS SRL")'),
+      etransportTransportDate: z.string().optional().describe('Transport start date (YYYY-MM-DD)'),
+      // Route start (loading point)
+      etransportStartCounty: z.number().optional().describe('Start county code (1-52 per ANAF nomenclature, e.g., 4=Bacau, 40=Bucuresti). Required for e-Transport (BR-210)'),
+      etransportStartLocality: z.string().optional().describe('Start locality name (2-100 chars per BR-214)'),
+      etransportStartStreet: z.string().optional().describe('Start street name (2-100 chars per BR-215)'),
+      etransportStartNumber: z.string().optional().describe('Start street number'),
+      etransportStartOtherInfo: z.string().optional().describe('Start additional address info'),
+      etransportStartPostalCode: z.string().optional().describe('Start postal code'),
+      // Route end (delivery point)
+      etransportEndCounty: z.number().optional().describe('End county code (1-52). Required for e-Transport (BR-211)'),
+      etransportEndLocality: z.string().optional().describe('End locality name (2-100 chars)'),
+      etransportEndStreet: z.string().optional().describe('End street name (2-100 chars)'),
+      etransportEndNumber: z.string().optional().describe('End street number'),
+      etransportEndOtherInfo: z.string().optional().describe('End additional address info'),
+      etransportEndPostalCode: z.string().optional().describe('End postal code'),
       lines: z.array(deliveryLineItemSchema).describe('Array of line items (minimum 1 required)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
@@ -177,6 +208,28 @@ export const tools = [
       notes: z.string().optional().describe('Public notes about the delivery'),
       mentions: z.string().optional().describe('Additional mentions or instructions'),
       internalNote: z.string().optional().describe('Internal note (not visible to client)'),
+      // e-Transport header fields
+      etransportOperationType: z.number().optional().describe('Operation type code: 10, 12, 20, 30 (TTN), 40, 50, 60'),
+      etransportPostIncident: z.boolean().optional().describe('Post-incident declaration'),
+      etransportVehicleNumber: z.string().optional().describe('Vehicle registration number (3-20 uppercase alphanumeric)'),
+      etransportTrailer1: z.string().optional().describe('First trailer registration number'),
+      etransportTrailer2: z.string().optional().describe('Second trailer registration number'),
+      etransportTransporterCountry: z.string().optional().describe('Transporter country code (e.g., "RO")'),
+      etransportTransporterCode: z.string().optional().describe('Transporter CUI/CIF (numeric only)'),
+      etransportTransporterName: z.string().optional().describe('Transporter legal name'),
+      etransportTransportDate: z.string().optional().describe('Transport start date (YYYY-MM-DD)'),
+      etransportStartCounty: z.number().optional().describe('Start county code (1-52)'),
+      etransportStartLocality: z.string().optional().describe('Start locality name'),
+      etransportStartStreet: z.string().optional().describe('Start street name'),
+      etransportStartNumber: z.string().optional().describe('Start street number'),
+      etransportStartOtherInfo: z.string().optional().describe('Start additional address info'),
+      etransportStartPostalCode: z.string().optional().describe('Start postal code'),
+      etransportEndCounty: z.number().optional().describe('End county code (1-52)'),
+      etransportEndLocality: z.string().optional().describe('End locality name'),
+      etransportEndStreet: z.string().optional().describe('End street name'),
+      etransportEndNumber: z.string().optional().describe('End street number'),
+      etransportEndOtherInfo: z.string().optional().describe('End additional address info'),
+      etransportEndPostalCode: z.string().optional().describe('End postal code'),
       lines: z.array(deliveryLineItemSchema).describe('Array of line items (replaces all existing lines)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
@@ -370,6 +423,7 @@ export const tools = [
       body: z.string().optional().describe('Email body text (auto-generated if omitted)'),
       cc: z.array(z.string()).optional().describe('CC email addresses'),
       bcc: z.array(z.string()).optional().describe('BCC email addresses'),
+      templateId: z.string().optional().describe('UUID of email template to use (category: delivery_note)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const config = getConfig();
@@ -382,6 +436,7 @@ export const tools = [
       if (params.body) body.body = params.body;
       if (params.cc) body.cc = params.cc;
       if (params.bcc) body.bcc = params.bcc;
+      if (params.templateId) body.templateId = params.templateId;
 
       const res = await apiRequest(`/api/v1/delivery-notes/${params.uuid}/email`, {
         method: 'POST',

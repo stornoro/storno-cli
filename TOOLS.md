@@ -1524,7 +1524,39 @@ Create a new delivery note in draft status. Delivery notes document physical del
 | `notes` | string | No | Public notes about the delivery |
 | `mentions` | string | No | Additional mentions or instructions |
 | `internalNote` | string | No | Internal note (not visible to client) |
+| `etransportOperationType` | number | No | Operation type: 10 (intra-EU acquisition), 12 (intra-EU delivery), 20 (domestic transaction), 30 (TTN), 40 (import), 50 (export), 60 (not released) |
+| `etransportPostIncident` | boolean | No | Post-incident declaration |
+| `etransportVehicleNumber` | string | No | Vehicle registration (3-20 uppercase alphanumeric, BR-031) |
+| `etransportTrailer1` | string | No | First trailer registration number |
+| `etransportTrailer2` | string | No | Second trailer registration number |
+| `etransportTransporterCountry` | string | No | Transporter country (ISO 3166-1 alpha-2). Must be "RO" for TTN (BR-005) |
+| `etransportTransporterCode` | string | No | Transporter CUI/CIF (numeric only, BR-002) |
+| `etransportTransporterName` | string | No | Transporter legal name |
+| `etransportTransportDate` | string | No | Transport start date (YYYY-MM-DD) |
+| `etransportStartCounty` | number | No | Start county code (1-52 per ANAF nomenclature, BR-210) |
+| `etransportStartLocality` | string | No | Start locality (2-100 chars, BR-214) |
+| `etransportStartStreet` | string | No | Start street (2-100 chars, BR-215) |
+| `etransportStartNumber` | string | No | Start street number |
+| `etransportStartOtherInfo` | string | No | Start additional address info |
+| `etransportStartPostalCode` | string | No | Start postal code |
+| `etransportEndCounty` | number | No | End county code (1-52, BR-211) |
+| `etransportEndLocality` | string | No | End locality (2-100 chars) |
+| `etransportEndStreet` | string | No | End street (2-100 chars) |
+| `etransportEndNumber` | string | No | End street number |
+| `etransportEndOtherInfo` | string | No | End additional address info |
+| `etransportEndPostalCode` | string | No | End postal code |
 | `lines` | array | Yes | Array of line items (minimum 1 required) |
+
+**Line item e-Transport fields:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `tariffCode` | string | No | 8-digit HS/CN tariff code (e.g., "84131100"). Required for e-Transport (BR-206) |
+| `purposeCode` | number | No | Purpose code. For TTN: 101 (commercial), 704, 705, 9901 (other) per BR-070 |
+| `unitOfMeasureCode` | string | No | UN/ECE Rec 20 code (e.g., "H87"=piece, "KGM"=kg, "SET"=set) |
+| `netWeight` | string | No | Net weight in kg (e.g., "120.00"). Required for e-Transport (BR-207) |
+| `grossWeight` | string | No | Gross weight in kg (e.g., "140.00") |
+| `valueWithoutVat` | string | No | Line value without VAT (e.g., "15000.00"). Required for e-Transport (BR-208) |
 
 ### `delivery_notes_update`
 
@@ -1554,7 +1586,30 @@ Update an existing delivery note. Delivery notes in draft or issued status can b
 | `notes` | string | No | Public notes about the delivery |
 | `mentions` | string | No | Additional mentions or instructions |
 | `internalNote` | string | No | Internal note (not visible to client) |
+| `etransportOperationType` | number | No | Operation type code (10, 12, 20, 30, 40, 50, 60) |
+| `etransportPostIncident` | boolean | No | Post-incident declaration |
+| `etransportVehicleNumber` | string | No | Vehicle registration (3-20 uppercase alphanumeric) |
+| `etransportTrailer1` | string | No | First trailer registration |
+| `etransportTrailer2` | string | No | Second trailer registration |
+| `etransportTransporterCountry` | string | No | Transporter country (e.g., "RO") |
+| `etransportTransporterCode` | string | No | Transporter CUI/CIF (numeric) |
+| `etransportTransporterName` | string | No | Transporter legal name |
+| `etransportTransportDate` | string | No | Transport date (YYYY-MM-DD) |
+| `etransportStartCounty` | number | No | Start county code (1-52) |
+| `etransportStartLocality` | string | No | Start locality |
+| `etransportStartStreet` | string | No | Start street |
+| `etransportStartNumber` | string | No | Start street number |
+| `etransportStartOtherInfo` | string | No | Start additional info |
+| `etransportStartPostalCode` | string | No | Start postal code |
+| `etransportEndCounty` | number | No | End county code (1-52) |
+| `etransportEndLocality` | string | No | End locality |
+| `etransportEndStreet` | string | No | End street |
+| `etransportEndNumber` | string | No | End street number |
+| `etransportEndOtherInfo` | string | No | End additional info |
+| `etransportEndPostalCode` | string | No | End postal code |
 | `lines` | array | Yes | Array of line items (replaces all existing lines) |
+
+**Line item e-Transport fields:** Same as `delivery_notes_create` (tariffCode, purposeCode, unitOfMeasureCode, netWeight, grossWeight, valueWithoutVat).
 
 ### `delivery_notes_delete`
 
@@ -2077,17 +2132,18 @@ Convert an amount between two currencies using current BNR exchange rates. For n
 
 ### `email_templates_list`
 
-List all email templates configured for the selected company. Templates support dynamic variables like {{invoice_number}}, {{client_name}}, {{total}}, {{currency}}, {{due_date}}, {{issue_date}}, {{company_name}}. If no templates exist, a default template is automatically created.
+List all email templates configured for the selected company. Use the category parameter to filter by document type. If no templates exist for a category, a default template is automatically created.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `companyId` | string | No | Company UUID (overrides configured default) |
+| `category` | string | No | Template category: "invoice" (default), "delivery_note", or "receipt" |
 
 ### `email_templates_create`
 
-Create a new email template for invoice communications. Templates support dynamic variables ({{invoice_number}}, {{client_name}}, {{total}}, {{currency}}, {{due_date}}, {{issue_date}}, {{company_name}}) that are replaced with actual data when emails are sent.
+Create a new email template. Templates support dynamic variables that are replaced with actual data when emails are sent. Available variables depend on the category.
 
 **Parameters:**
 
@@ -2095,13 +2151,14 @@ Create a new email template for invoice communications. Templates support dynami
 |------|------|----------|-------------|
 | `companyId` | string | No | Company UUID (overrides configured default) |
 | `name` | string | Yes | Template name for internal reference |
-| `subject` | string | Yes | Email subject line (supports variables like {{invoice_number}}) |
-| `body` | string | Yes | Email body content (supports variables and HTML formatting) |
-| `isDefault` | boolean | No | Set as default template (default: false). Only one template can be default |
+| `subject` | string | Yes | Email subject line (supports variables like [[invoice_number]]) |
+| `body` | string | Yes | Email body content (supports variables and Markdown formatting) |
+| `isDefault` | boolean | No | Set as default template (default: false). Only one template can be default per category |
+| `category` | string | No | Template category: "invoice" (default), "delivery_note", or "receipt" |
 
 ### `email_templates_update`
 
-Update an existing email template. All fields are optional but at least one must be provided. Setting isDefault to true will unset the current default template.
+Update an existing email template. All fields are optional but at least one must be provided. Setting isDefault to true will unset the current default template in the same category.
 
 **Parameters:**
 
@@ -2111,8 +2168,8 @@ Update an existing email template. All fields are optional but at least one must
 | `companyId` | string | No | Company UUID (overrides configured default) |
 | `name` | string | No | Template name for internal reference |
 | `subject` | string | No | Email subject line (supports variables) |
-| `body` | string | No | Email body content (supports variables and HTML formatting) |
-| `isDefault` | boolean | No | Set as default template. Only one template can be default at a time |
+| `body` | string | No | Email body content (supports variables and Markdown formatting) |
+| `isDefault` | boolean | No | Set as default template. Only one template can be default per category |
 
 ### `email_templates_delete`
 
