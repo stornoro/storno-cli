@@ -48,8 +48,9 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Import](#import)
 - [CPV Codes](#cpv-codes)
 - [NC Codes](#nc-codes)
+- [Telemetry](#telemetry)
 
-**Total tools: 236**
+**Total tools: 237**
 
 ---
 
@@ -3402,6 +3403,27 @@ Search NC (Combined Nomenclature / NACE) classification codes. Used in e-Transpo
 
 ---
 
-**Total tools: 234**
+---
 
-Generated from storno-cli source on 2026-02-24
+## Telemetry
+
+### `telemetry_send`
+
+Send a batch of telemetry events for the current user and company. Events are processed asynchronously. Maximum 100 events per batch.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `events` | array | Yes | Array of telemetry events to send |
+| `events[].event` | string | Yes | Event name (e.g. "invoice.created", "client.deleted") |
+| `events[].properties` | object | No | Optional event properties |
+| `events[].timestamp` | string | No | ISO 8601 timestamp (defaults to now) |
+| `platform` | string | No | Platform identifier (default: "cli") |
+| `companyId` | string | No | Company UUID (overrides STORNO_COMPANY_ID env var) |
+
+---
+
+**Total tools: 237**
+
+Generated from storno-cli source on 2026-03-05

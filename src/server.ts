@@ -54,6 +54,7 @@ import { tools as storageConfigTools } from './tools/storage-config.js';
 import { tools as importTools } from './tools/import.js';
 import { tools as cpvCodesTools } from './tools/cpv-codes.js';
 import { tools as ncCodesTools } from './tools/nc-codes.js';
+import { tools as telemetryTools } from './tools/telemetry.js';
 
 interface ToolDef {
   name: string;
@@ -104,6 +105,7 @@ const allTools: ToolDef[] = [
   ...importTools,
   ...cpvCodesTools,
   ...ncCodesTools,
+  ...telemetryTools,
 ];
 
 /** Create a new McpServer with all Storno tools registered. */
