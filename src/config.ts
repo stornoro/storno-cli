@@ -1,0 +1,73 @@
+/**
+ * Configuration for the Storno MCP server.
+ *
+ * Environment variables:
+ *   STORNO_BASE_URL      — API base URL (default: https://api.storno.ro)
+ *   STORNO_TOKEN         — JWT access token (obtain via auth_login tool)
+ *   STORNO_REFRESH_TOKEN — JWT refresh token (for auto-renewal)
+ *   STORNO_COMPANY_ID    — Default company UUID (used as X-Company header)
+ *   STORNO_EMAIL         — Email for auto-login (optional, used if no token)
+ *   STORNO_PASSWORD      — Password for auto-login (optional, used if no token)
+ *   STORNO_HTTP_PORT     — If set, starts Streamable HTTP transport on this port
+ *   STORNO_HTTP_HOST     — HTTP bind address (default: 127.0.0.1)
+ *   STORNO_OAUTH_BASE_URL — OAuth2 base URL for SaaS protected-resource metadata
+ *   STORNO_OAUTH_CLIENT_ID — OAuth2 client ID for SaaS mode
+ */
+
+export interface Config {
+  baseUrl: string;
+  token: string | null;
+  refreshToken: string | null;
+  companyId: string | null;
+  email: string | null;
+  password: string | null;
+  httpPort: number | null;
+  httpHost: string;
+  oauthBaseUrl: string | null;
+  oauthClientId: string | null;
+}
+
+let _config: Config | null = null;
+
+// Lazy import to avoid circular dependency — context.ts imports nothing from config.ts
+let _sessionContext: typeof import('./context.js').sessionContext | null = null;
+async function getSessionContext() {
+  if (!_sessionContext) {
+    _sessionContext = (await import('./context.js')).sessionContext;
+  }
+  return _sessionContext;
+}
+
+// Eagerly resolve so the proxy can use it synchronously
+let _resolvedSessionContext: typeof import('./context.js').sessionContext | null = null;
+import('./context.js').then((m) => { _resolvedSessionContext = m.sessionContext; });
+
+export function getConfig(): Config {
+  if (!_config) {
+    _config = {
+      baseUrl: (process.env.STORNO_BASE_URL || 'https://api.storno.ro').replace(/\/$/, ''),
+      token: process.env.STORNO_TOKEN || null,
+      refreshToken: process.env.STORNO_REFRESH_TOKEN || null,
+      companyId: process.env.STORNO_COMPANY_ID || null,
+      email: process.env.STORNO_EMAIL || null,
+      password: process.env.STORNO_PASSWORD || null,
+      httpPort: process.env.STORNO_HTTP_PORT ? parseInt(process.env.STORNO_HTTP_PORT, 10) : null,
+      httpHost: process.env.STORNO_HTTP_HOST || '127.0.0.1',
+      oauthBaseUrl: process.env.STORNO_OAUTH_BASE_URL || null,
+      oauthClientId: process.env.STORNO_OAUTH_CLIENT_ID || null,
+    };
+  }
+
+  // Return a proxy that overlays the per-session token (SaaS mode)
+  // so all existing `getConfig().token` checks work without changes.
+  const sessionToken = _resolvedSessionContext?.getStore()?.token;
+  if (sessionToken) {
+    return { ..._config, token: sessionToken };
+  }
+  return _config;
+}
+
+export function updateConfig(updates: Partial<Config>): void {
+  const config = getConfig();
+  Object.assign(config, updates);
+}

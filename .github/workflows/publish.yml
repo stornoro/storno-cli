@@ -1,0 +1,32 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+    # id-token: OIDC token for npm Trusted Publishing (no NPM_TOKEN secret needed)
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # --provenance emits a signed attestation (optional but recommended
+      # alongside Trusted Publishing for supply-chain integrity).
+      - run: npm publish --access public --provenance
