@@ -137,7 +137,7 @@ export const tools = [
   {
     name: 'auth_update_profile',
     description:
-      "Update the authenticated user's profile. Can update name, phone, timezone, preferences, or change password (requires currentPassword when changing password).",
+      "Update the authenticated user's profile. Can update name, phone, timezone, quiet-hours preference, preferences, or change password (requires currentPassword when changing password).",
     inputSchema: z.object({
       firstName: z.string().optional().describe("User's first name"),
       lastName: z.string().optional().describe("User's last name"),
@@ -149,6 +149,10 @@ export const tools = [
         .string()
         .optional()
         .describe('Timezone in IANA format (e.g., Europe/Bucharest)'),
+      respectQuietHours: z
+        .boolean()
+        .optional()
+        .describe('Mute push notifications between 22:00 and 08:00 local time (defaults to true)'),
       preferences: z
         .record(z.unknown())
         .optional()
@@ -173,6 +177,7 @@ export const tools = [
         'lastName',
         'phone',
         'timezone',
+        'respectQuietHours',
         'preferences',
         'password',
         'currentPassword',
