@@ -18,16 +18,25 @@ export const tools = [
   {
     name: 'system_version',
     description:
-      'Get backend version plus web and mobile (iOS/Android/Huawei) latest+min versions and store URLs. Pass `platform` to get a flat `client` object for that mobile surface.',
+      'Get backend version plus web and mobile (iOS/Android/Huawei) latest+min versions and store URLs. Pass `platform` to get a flat `client` object for that mobile surface, and `version` to also get a resolved `gate` with `tier` (blocking/recommended/ok/unknown) so you do not have to compare versions yourself.',
     inputSchema: z.object({
       platform: z
         .enum(['ios', 'android', 'huawei'])
         .optional()
         .describe('Mobile platform to get a flat `client` object for. Omit for the full payload.'),
+      version: z
+        .string()
+        .optional()
+        .describe('Current client version (e.g. `1.4.2`). Only honoured when `platform` is also supplied. Drives the `gate.tier` field.'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const platform = params.platform as 'ios' | 'android' | 'huawei' | undefined;
-      const path = platform ? `/api/v1/version?platform=${platform}` : '/api/v1/version';
+      const version = typeof params.version === 'string' ? params.version : undefined;
+      const search = new URLSearchParams();
+      if (platform) search.set('platform', platform);
+      if (version) search.set('version', version);
+      const qs = search.toString();
+      const path = qs ? `/api/v1/version?${qs}` : '/api/v1/version';
       const result = await apiRequest(path);
       return formatResponse(result);
     },
