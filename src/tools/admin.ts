@@ -114,4 +114,64 @@ export const tools = [
       return formatResponse(res);
     },
   },
+
+  {
+    name: 'admin_version_overrides',
+    description:
+      'List the per-platform version-gate overrides for the mobile app. SUPER_ADMIN only. Returns one entry per supported platform (ios/android/huawei) with the deploy-time YAML defaults, the live DB override (if any), and the merged effective values that drive /api/v1/version. Use admin_version_override_update to flip the kill switch.',
+    inputSchema: z.object({}),
+    handler: async (_params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const res = await apiRequest('/api/v1/admin/version-overrides');
+      return formatResponse(res);
+    },
+  },
+
+  {
+    name: 'admin_version_override_update',
+    description:
+      'Set or clear per-field version-gate overrides for one mobile platform. SUPER_ADMIN only. Each override field is independent — set a string to override, set null to clear, omit to leave as-is. Audit-logged. Bumping `minOverride` to a value above the live install ratchets the in-app blocker on instantly without a redeploy.',
+    inputSchema: z.object({
+      platform: z
+        .enum(['ios', 'android', 'huawei'])
+        .describe('Mobile platform to override.'),
+      minOverride: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Lowest supported semver, e.g. "1.4.5". null clears, omit to leave as-is.'),
+      latestOverride: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Latest published semver. Bumping this promotes clients to the recommended-update prompt.'),
+      storeUrlOverride: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Override the deep link the Update button opens (rare — only when a store URL changes mid-incident).'),
+      releaseNotesUrlOverride: z
+        .string()
+        .nullable()
+        .optional()
+        .describe('Optional "what\'s new" URL shown next to the Update button.'),
+      messageOverride: z
+        .record(z.string())
+        .nullable()
+        .optional()
+        .describe('Locale-keyed message shown under the prompt, e.g. {"ro": "Critical security update.", "en": "Critical security update."}. {} or null clears.'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const { platform, ...body } = params as {
+        platform: 'ios' | 'android' | 'huawei';
+        [key: string]: unknown;
+      };
+      const res = await apiRequest(`/api/v1/admin/version-overrides/${platform}`, {
+        method: 'PUT',
+        body,
+      });
+      return formatResponse(res);
+    },
+  },
 ];
