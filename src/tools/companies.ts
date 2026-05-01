@@ -189,6 +189,25 @@ export const tools = [
   },
 
   {
+    name: 'companies_toggle_sync',
+    description:
+      'Toggle ANAF SPV / e-Factura synchronization on or off for a specific company. Calls POST /api/v1/companies/{uuid}/toggle-sync — flips the company\'s syncEnabled boolean. Requires COMPANY_EDIT permission. Enabling fails with 422 (messageKey ERR_SYNC_ENABLE_NO_TOKEN) when the company has no valid ANAF OAuth token; connect via anaf_create_token_link first. Returns { syncEnabled, message }. To enable on a fresh company, the recipe is: companies_list → anaf_create_token_link (open the URL, complete OAuth) → anaf_validate_cif → companies_toggle_sync.',
+    inputSchema: z.object({
+      companyId: z
+        .string()
+        .describe('Company UUID. Use companies_list to find available UUIDs.'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const { companyId } = params as { companyId: string };
+      const result = await apiRequest(`/api/v1/companies/${companyId}/toggle-sync`, {
+        method: 'POST',
+      });
+      return formatResponse(result);
+    },
+  },
+
+  {
     name: 'companies_set_active',
     description:
       'Set the organization-level active company by UUID. Calls PUT /api/v1/companies/{uuid}/set-active on the server and returns the updated list of all companies with the new active company reflected. Requires COMPANY_EDIT permission. Use companies_list first to find available company UUIDs.',
