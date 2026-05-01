@@ -160,6 +160,10 @@ export const tools = [
         .nullable()
         .optional()
         .describe('Locale-keyed message shown under the prompt, e.g. {"ro": "Critical security update.", "en": "Critical security update."}. {} or null clears.'),
+      notify: z
+        .boolean()
+        .optional()
+        .describe('When true, fan out an in-app notification + push to every active user on the platform whose last reported version is below the new effective min/latest. Default off — pass true for ratchets, leave false for silent corrections.'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
