@@ -1,0 +1,37 @@
+# Dependabot keeps npm dependencies and GitHub Actions versions current
+# with weekly PRs (one PR per ecosystem batch — easy to review). Security
+# updates land separately and immediately, regardless of the schedule.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Europe/Bucharest
+    open-pull-requests-limit: 5
+    reviewers:
+      - stornoro-bot
+    commit-message:
+      prefix: deps
+      include: scope
+    groups:
+      # Group dev-only bumps so they don't drown the queue. Production
+      # bumps land as individual PRs since each one warrants a review
+      # (these are what get shipped to users via npm publish).
+      dev-dependencies:
+        dependency-type: development
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Europe/Bucharest
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: ci
+      include: scope

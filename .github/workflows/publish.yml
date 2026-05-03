@@ -6,14 +6,20 @@ on:
       - 'v*'
   workflow_dispatch:
 
+# Serialise concurrent publish jobs — never cancel one in flight (npm
+# publishes are not idempotent). If two tags land in quick succession the
+# second waits for the first to complete before starting.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: Build & Publish
     runs-on: ubuntu-latest
-    # id-token: OIDC token for npm Trusted Publishing (no NPM_TOKEN secret needed)
     permissions:
-      contents: read
-      id-token: write
+      contents: write     # creating a GitHub Release writes to the repo
+      id-token: write     # OIDC token for npm Trusted Publishing
 
     steps:
       - uses: actions/checkout@v4
@@ -22,11 +28,59 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+          cache: 'npm'
+
+      # Refuse to publish when package.json's version does not match the tag.
+      # Otherwise it's possible to ship the wrong version (or fail mid-publish)
+      # if someone forgets to bump package.json before tagging. workflow_dispatch
+      # runs without a tag — skip the guard there.
+      - name: Verify tag matches package.json version
+        if: github.ref_type == 'tag'
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::package.json version ($PKG_VERSION) does not match tag ($TAG_VERSION)."
+            echo "Bump package.json's version to $TAG_VERSION (and commit) before tagging $GITHUB_REF_NAME."
+            exit 1
+          fi
+          echo "✓ package.json version $PKG_VERSION matches tag $GITHUB_REF_NAME"
 
       - run: npm ci
 
       - run: npm run build
 
-      # --provenance emits a signed attestation (optional but recommended
-      # alongside Trusted Publishing for supply-chain integrity).
+      # --provenance emits a signed attestation (recommended alongside
+      # Trusted Publishing for supply-chain integrity).
       - run: npm publish --access public --provenance
+
+      # Confirm the package actually landed on the registry before the
+      # workflow reports success. Otherwise a silent npm-side failure
+      # would leave the tag in place with no published artifact.
+      - name: Verify package was published
+        if: github.ref_type == 'tag'
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          for i in {1..6}; do
+            PUBLISHED=$(npm view storno-cli@$TAG_VERSION version 2>/dev/null || true)
+            if [ "$PUBLISHED" = "$TAG_VERSION" ]; then
+              echo "✓ storno-cli@$TAG_VERSION confirmed on registry"
+              exit 0
+            fi
+            echo "Waiting for registry to reflect $TAG_VERSION (attempt $i/6)..."
+            sleep 10
+          done
+          echo "::error::storno-cli@$TAG_VERSION did not appear on the registry within 60s"
+          exit 1
+
+      # Create a GitHub Release page for the tag with auto-generated notes
+      # from PR titles + commits since the previous tag. Skipped on
+      # workflow_dispatch where there's no tag to release against.
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: false

@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel any in-flight CI run on the same branch when a new commit lands —
+# wasted CI capacity isn't worth the second-guess on what the latest result
+# means. The publish workflow has its own concurrency group.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build & type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - run: npm ci
+
+      # `tsc --noEmit` is a stricter check than `npm run build` — it surfaces
+      # type errors that the emit pass would normally tolerate. Run it first
+      # so a type-only regression fails fast without writing to dist/.
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      # Sanity-check the build artifact: every entry the package.json's "bin"
+      # field promises to npm must actually exist in dist/ after the build.
+      # Catches broken bin scripts before they hit npm.
+      - name: Verify bin entries exist
+        run: |
+          node -e '
+            const pkg = require("./package.json");
+            const bins = pkg.bin || {};
+            const fs = require("fs");
+            for (const [name, path] of Object.entries(bins)) {
+              if (!fs.existsSync(path)) {
+                console.error(`bin entry "${name}" → ${path} not found in dist/`);
+                process.exit(1);
+              }
+            }
+            console.log(`✓ all ${Object.keys(bins).length} bin entries present`);
+          '
