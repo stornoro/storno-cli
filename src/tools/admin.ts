@@ -178,4 +178,68 @@ export const tools = [
       return formatResponse(res);
     },
   },
+
+  {
+    name: 'admin_email_log',
+    description:
+      'List lifecycle email log entries with filtering and pagination. SUPER_ADMIN only. Returns sent/skipped/failed lifecycle emails across all categories (re_engagement, trial_ended, feature_drip, account_without_login, first_company_created, first_invoice_created, dunning, trial_expiration). Use to audit delivery, debug suppressions, or check drip cadence.',
+    inputSchema: z.object({
+      page: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe('Page number (default: 1)'),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .max(100)
+        .optional()
+        .describe('Items per page (default: 25, max: 100)'),
+      category: z
+        .string()
+        .optional()
+        .describe('Filter by email category, e.g. re_engagement, trial_ended, feature_drip'),
+      recipientEmail: z
+        .string()
+        .optional()
+        .describe('Filter by recipient email (partial match)'),
+      userId: z
+        .string()
+        .optional()
+        .describe('Filter by sender/associated user UUID'),
+      status: z
+        .enum(['sent', 'failed', 'delivered', 'bounced'])
+        .optional()
+        .describe('Filter by delivery status'),
+      dateFrom: z
+        .string()
+        .optional()
+        .describe('Filter entries sent on or after this ISO 8601 date, e.g. 2026-05-01'),
+      dateTo: z
+        .string()
+        .optional()
+        .describe('Filter entries sent on or before this ISO 8601 date, e.g. 2026-05-31'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+
+      const { page, limit, category, recipientEmail, userId, status, dateFrom, dateTo } = params as {
+        page?: number;
+        limit?: number;
+        category?: string;
+        recipientEmail?: string;
+        userId?: string;
+        status?: string;
+        dateFrom?: string;
+        dateTo?: string;
+      };
+
+      const res = await apiRequest('/api/v1/admin/email-log', {
+        query: { page, limit, category, recipientEmail, userId, status, dateFrom, dateTo },
+      });
+      return formatResponse(res);
+    },
+  },
 ];
