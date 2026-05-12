@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { apiRequest } from '../client.js';
 import type { ApiResponse, ApiError } from '../client.js';
 import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/errors.js';
+import { preparePayload } from '../utils/document-payload.js';
 import { getConfig } from '../config.js';
 
 /**
@@ -177,7 +178,7 @@ export const tools = [
       const res = await apiRequest('/api/v1/delivery-notes', {
         method: 'POST',
         companyId,
-        body: body as Record<string, unknown>,
+        body: await preparePayload(body as Record<string, unknown>, companyId),
       });
       return formatDeliveryNoteResponse(res);
     },
@@ -242,7 +243,7 @@ export const tools = [
       const res = await apiRequest(`/api/v1/delivery-notes/${uuid}`, {
         method: 'PUT',
         companyId,
-        body: body as Record<string, unknown>,
+        body: await preparePayload(body as Record<string, unknown>, companyId),
       });
       return formatDeliveryNoteResponse(res);
     },

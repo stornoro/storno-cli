@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { apiRequest } from '../client.js';
 import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/errors.js';
+import { preparePayload } from '../utils/document-payload.js';
 import { getConfig } from '../config.js';
 
 const lineUblExtensionsSchema = z
@@ -473,7 +474,7 @@ export const tools = [
       const result = await apiRequest('/api/v1/invoices', {
         method: 'POST',
         companyId,
-        body: body as Record<string, unknown>,
+        body: await preparePayload(body as Record<string, unknown>, companyId),
       });
       return formatResponse(result);
     },
@@ -586,7 +587,7 @@ export const tools = [
       const result = await apiRequest(`/api/v1/invoices/${uuid}`, {
         method: 'PUT',
         companyId,
-        body,
+        body: await preparePayload(body, companyId),
       });
       return formatResponse(result);
     },

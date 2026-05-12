@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { apiRequest } from '../client.js';
 import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/errors.js';
+import { preparePayload } from '../utils/document-payload.js';
 import { getConfig } from '../config.js';
 
 const receiptLineItemSchema = z.object({
@@ -115,7 +116,7 @@ export const tools = [
       const res = await apiRequest('/api/v1/receipts', {
         method: 'POST',
         companyId,
-        body: body as Record<string, unknown>,
+        body: await preparePayload(body as Record<string, unknown>, companyId),
       });
       return formatResponse(res);
     },
@@ -164,7 +165,7 @@ export const tools = [
       const res = await apiRequest(`/api/v1/receipts/${uuid}`, {
         method: 'PUT',
         companyId,
-        body: body as Record<string, unknown>,
+        body: await preparePayload(body as Record<string, unknown>, companyId),
       });
       return formatResponse(res);
     },
