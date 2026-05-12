@@ -2996,7 +2996,7 @@ Generate a sales analysis report for a date range. Returns KPI summary (annual t
 
 ### `balance_analysis`
 
-Get balance analysis (Analiza Balante) for a year. Returns financial indicators (revenue, expenses, profit, turnover, salaries, etc.), monthly evolution, profitability ratios, top expenses by account, and year-over-year comparison. Data comes from uploaded trial balance PDFs. Requires X-Company header.
+Get balance analysis (Analiza Balante) for a year. Returns the standard indicator bag (revenue, expenses, profit, turnover, salaries, etc.), monthly evolution, top expenses, year-over-year comparison, plus 8 grouped financial-ratio sections: `balanceSheet` (raw figures), `liquidity` (current/quick/cash ratio + working capital + NFR + net cash), `solvency` (debt-to-equity, financial autonomy, debt ratio, general solvency, interest coverage), `profitabilityRatios` (gross/operating/EBITDA/net margins, ROA/ROE/ROCE, EBIT, EBITDA), `efficiency` (asset/fixed-asset/inventory turnover, DSO/DPO/CCC), `fiscal` (VAT payable, salary debts, state-budget debts, micro-enterprise EUR threshold, VAT RON threshold), `cashflow` (cash runway in months, burn rate, break-even, contribution rate, operating leverage), `aging` (receivables aging 0-30/31-60/61-90/90+ + IFRS 9 simplified provision), `concentration` (top 5/10 client revenue share, top clients list). Each ratio carries `status`: `normal | warning | critical | na`. Trial-balance sections show `hasData=false` until balances are uploaded; `aging` and `concentration` come from invoice data. Requires X-Company header.
 
 **Parameters:**
 
