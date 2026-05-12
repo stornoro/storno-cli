@@ -4,6 +4,22 @@ import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/er
 import { preparePayload } from '../utils/document-payload.js';
 import { getConfig } from '../config.js';
 
+const INVOICE_TYPE_CODES = [
+  'standard',
+  'reverse_charge',
+  'exempt_with_deduction',
+  'services_art_311',
+  'sales_art_312',
+  'non_taxable',
+  'special_regime_art_314_315',
+  'non_transfer',
+  'simplified',
+  'services_art_278',
+  'exempt_art_294_ab',
+  'exempt_art_294_cd',
+  'self_billing',
+] as const;
+
 const lineUblExtensionsSchema = z
   .object({
     invoicePeriod: z
@@ -297,10 +313,10 @@ export const tools = [
         .optional()
         .describe('Exchange rate relative to RON (default: 1.0)'),
       invoiceTypeCode: z
-        .string()
+        .enum(INVOICE_TYPE_CODES)
         .optional()
         .describe(
-          'UBL invoice type code: 380=commercial (default), 381=credit note, 384=corrected, 389=self-billed'
+          'Tax regime / invoice type code. standard = default commercial invoice; reverse_charge = taxare inversa; the other values map to specific Romanian tax-code articles.'
         ),
       notes: z
         .string()
@@ -506,7 +522,7 @@ export const tools = [
         .describe('Payment due date (YYYY-MM-DD)'),
       currency: z.string().optional().describe('ISO 4217 currency code'),
       exchangeRate: z.number().optional().describe('Exchange rate relative to RON'),
-      invoiceTypeCode: z.string().optional().describe('UBL invoice type code'),
+      invoiceTypeCode: z.enum(INVOICE_TYPE_CODES).optional().describe('Tax regime / invoice type code'),
       notes: z.string().optional().describe('Public notes visible to the client'),
       paymentTerms: z.string().optional().describe('Payment terms description'),
       deliveryLocation: z.string().optional().describe('Delivery address'),

@@ -4,6 +4,22 @@ import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/er
 import { preparePayload } from '../utils/document-payload.js';
 import { getConfig } from '../config.js';
 
+const INVOICE_TYPE_CODES = [
+  'standard',
+  'reverse_charge',
+  'exempt_with_deduction',
+  'services_art_311',
+  'sales_art_312',
+  'non_taxable',
+  'special_regime_art_314_315',
+  'non_transfer',
+  'simplified',
+  'services_art_278',
+  'exempt_art_294_ab',
+  'exempt_art_294_cd',
+  'self_billing',
+] as const;
+
 const lineItemSchema = z.object({
   uuid: z.string().optional().describe('UUID of existing line item (omit to create new)'),
   description: z.string().describe('Item description'),
@@ -93,7 +109,7 @@ export const tools = [
       validUntil: z.string().describe('Valid until date (YYYY-MM-DD)'),
       currency: z.string().describe('Currency code (e.g., RON, EUR, USD)'),
       exchangeRate: z.number().optional().describe('Exchange rate to base currency (default: 1.0 for RON)'),
-      invoiceTypeCode: z.string().optional().describe('Invoice type code (default: "380" - Commercial Invoice)'),
+      invoiceTypeCode: z.enum(INVOICE_TYPE_CODES).optional().describe('Tax regime / invoice type code (default: standard)'),
       notes: z.string().optional().describe('Public notes visible to client'),
       paymentTerms: z.string().optional().describe('Payment terms description (e.g., "Net 30")'),
       deliveryLocation: z.string().optional().describe('Delivery address or location'),
@@ -141,7 +157,7 @@ export const tools = [
       validUntil: z.string().describe('Valid until date (YYYY-MM-DD)'),
       currency: z.string().describe('Currency code (e.g., RON, EUR, USD)'),
       exchangeRate: z.number().optional().describe('Exchange rate to base currency'),
-      invoiceTypeCode: z.string().optional().describe('Invoice type code'),
+      invoiceTypeCode: z.enum(INVOICE_TYPE_CODES).optional().describe('Tax regime / invoice type code'),
       notes: z.string().optional().describe('Public notes visible to client'),
       paymentTerms: z.string().optional().describe('Payment terms description'),
       deliveryLocation: z.string().optional().describe('Delivery address or location'),

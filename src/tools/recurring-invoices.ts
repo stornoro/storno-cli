@@ -4,6 +4,26 @@ import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/er
 import { preparePayload } from '../utils/document-payload.js';
 import { getConfig } from '../config.js';
 
+const FREQUENCIES = ['once', 'weekly', 'monthly', 'bimonthly', 'quarterly', 'semi_annually', 'yearly'] as const;
+const DUE_DATE_TYPES = ['days', 'fixed_day'] as const;
+const DOCUMENT_TYPES = ['invoice', 'credit_note', 'proforma'] as const;
+const PRICE_RULES = ['fixed', 'updated_product', 'bnr_rate', 'bnr_rate_markup'] as const;
+const INVOICE_TYPE_CODES = [
+  'standard',
+  'reverse_charge',
+  'exempt_with_deduction',
+  'services_art_311',
+  'sales_art_312',
+  'non_taxable',
+  'special_regime_art_314_315',
+  'non_transfer',
+  'simplified',
+  'services_art_278',
+  'exempt_art_294_ab',
+  'exempt_art_294_cd',
+  'self_billing',
+] as const;
+
 const recurringLineItemSchema = z.object({
   description: z.string().describe('Line item description'),
   quantity: z.number().describe('Quantity (must be > 0)'),
@@ -12,11 +32,16 @@ const recurringLineItemSchema = z.object({
   unitOfMeasure: z.string().optional().describe('Unit of measure code (default: "buc")'),
   productId: z.string().optional().describe('UUID of linked product'),
   priceRule: z
-    .enum(['fixed', 'exchange_rate', 'markup'])
+    .enum(PRICE_RULES)
     .optional()
-    .describe('Pricing rule: fixed (default), exchange_rate, or markup'),
-  referenceCurrency: z.string().optional().describe('Reference currency (required if priceRule is exchange_rate)'),
-  markupPercent: z.number().optional().describe('Markup percentage (required if priceRule is markup)'),
+    .describe(
+      'Pricing rule. fixed: unitPrice as-is. updated_product: refresh from linked product on each issuance. bnr_rate: convert from referenceCurrency at BNR rate. bnr_rate_markup: same as bnr_rate plus markupPercent.'
+    ),
+  referenceCurrency: z
+    .string()
+    .optional()
+    .describe('Reference currency (set this together with priceRule=bnr_rate or bnr_rate_markup; invoice currency must be RON)'),
+  markupPercent: z.number().optional().describe('Markup percentage applied on top of BNR rate (used with priceRule=bnr_rate_markup)'),
 });
 
 export const tools = [
@@ -31,7 +56,7 @@ export const tools = [
       search: z.string().optional().describe('Search term to filter by reference or notes'),
       isActive: z.boolean().optional().describe('Filter by active status (true/false)'),
       frequency: z
-        .enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual'])
+        .enum(FREQUENCIES)
         .optional()
         .describe('Filter by generation frequency'),
     }),
@@ -77,31 +102,31 @@ export const tools = [
   {
     name: 'recurring_invoices_create',
     description:
-      'Create a new recurring invoice template. The system will automatically generate invoices based on the specified frequency and schedule. Supports fixed, exchange_rate, and markup pricing rules on line items.',
+      'Create a new recurring invoice template. The system will automatically generate invoices based on the specified frequency and schedule. Supports fixed, updated_product, bnr_rate and bnr_rate_markup pricing rules on line items.',
     inputSchema: z.object({
       companyId: z.string().optional().describe('Company UUID (overrides configured default)'),
       clientId: z.string().describe('UUID of the client'),
       seriesId: z.string().describe('UUID of the document series'),
       reference: z.string().optional().describe('Human-readable reference for this recurring invoice'),
-      documentType: z.enum(['invoice', 'credit_note']).describe('Document type to generate'),
+      documentType: z.enum(DOCUMENT_TYPES).describe('Document type to generate'),
       currency: z.string().describe('ISO 4217 currency code (e.g., RON, EUR)'),
-      invoiceTypeCode: z.string().describe('e-Factura invoice type code (e.g., "380")'),
+      invoiceTypeCode: z.enum(INVOICE_TYPE_CODES).describe('Tax regime / invoice type code'),
       frequency: z
-        .enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual'])
+        .enum(FREQUENCIES)
         .describe('How often to generate invoices'),
       frequencyDay: z.number().describe('Day of month for generation (1-31)'),
-      frequencyMonth: z.number().optional().describe('Month for annual generation (1-12, required if frequency is annual)'),
+      frequencyMonth: z.number().optional().describe('Month for yearly generation (1-12, required if frequency is yearly)'),
       nextIssuanceDate: z.string().describe('ISO 8601 date for the first invoice generation (YYYY-MM-DD)'),
       stopDate: z.string().optional().describe('ISO 8601 date to stop generation (YYYY-MM-DD)'),
-      dueDateType: z.enum(['fixed', 'relative']).describe('How due date is calculated'),
+      dueDateType: z.enum(DUE_DATE_TYPES).describe('How due date is calculated. days = N days after issue. fixed_day = fixed day of month.'),
       dueDateDays: z
         .number()
         .optional()
-        .describe('Days after issue date for due date (required if dueDateType is relative)'),
+        .describe('Days after issue date for due date (required if dueDateType is days)'),
       dueDateFixedDay: z
         .number()
         .optional()
-        .describe('Fixed day of month for due date (1-31, required if dueDateType is fixed)'),
+        .describe('Fixed day of month for due date (1-31, required if dueDateType is fixed_day)'),
       notes: z.string().optional().describe('Internal notes'),
       paymentTerms: z.string().optional().describe('Payment terms text'),
       autoEmailEnabled: z.boolean().optional().describe('Auto-send email on invoice generation (default: false)'),
@@ -138,18 +163,18 @@ export const tools = [
       clientId: z.string().optional().describe('UUID of the client'),
       seriesId: z.string().optional().describe('UUID of the document series'),
       reference: z.string().optional().describe('Human-readable reference'),
-      documentType: z.enum(['invoice', 'credit_note']).optional().describe('Document type to generate'),
+      documentType: z.enum(DOCUMENT_TYPES).optional().describe('Document type to generate'),
       currency: z.string().optional().describe('ISO 4217 currency code'),
-      invoiceTypeCode: z.string().optional().describe('e-Factura invoice type code'),
+      invoiceTypeCode: z.enum(INVOICE_TYPE_CODES).optional().describe('Tax regime / invoice type code'),
       frequency: z
-        .enum(['weekly', 'biweekly', 'monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual'])
+        .enum(FREQUENCIES)
         .optional()
         .describe('How often to generate invoices'),
       frequencyDay: z.number().optional().describe('Day of month for generation (1-31)'),
-      frequencyMonth: z.number().optional().describe('Month for annual generation (1-12)'),
+      frequencyMonth: z.number().optional().describe('Month for yearly generation (1-12)'),
       nextIssuanceDate: z.string().optional().describe('ISO 8601 date for next invoice generation (YYYY-MM-DD)'),
       stopDate: z.string().nullable().optional().describe('ISO 8601 date to stop generation (null to remove)'),
-      dueDateType: z.enum(['fixed', 'relative']).optional().describe('How due date is calculated'),
+      dueDateType: z.enum(DUE_DATE_TYPES).optional().describe('How due date is calculated. days = N days after issue. fixed_day = fixed day of month.'),
       dueDateDays: z.number().optional().describe('Days after issue date for due date'),
       dueDateFixedDay: z.number().optional().describe('Fixed day of month for due date (1-31)'),
       notes: z.string().nullable().optional().describe('Internal notes'),

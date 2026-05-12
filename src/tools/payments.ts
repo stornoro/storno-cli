@@ -50,10 +50,10 @@ export const tools = [
         .string()
         .describe('Date payment was received in ISO 8601 format (YYYY-MM-DD)'),
       paymentMethod: z
-        .enum(['bank_transfer', 'cash', 'card', 'other'])
+        .enum(['bank_transfer', 'cash', 'card', 'cheque', 'other'])
         .optional()
         .describe(
-          'Payment method: bank_transfer (default), cash, card, or other'
+          'Payment method: bank_transfer (default), cash, card, cheque, or other'
         ),
       currency: z
         .string()
