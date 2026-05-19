@@ -1320,8 +1320,11 @@ export const tools = [
   {
     name: 'invoices_export_receipts_saga_xml',
     description:
-      'Export payment receipts (incasari) in Saga XML format. Exports all outgoing invoice payments for accounting software integration.',
+      'Export payment receipts (incasari) in Saga XML format. Exports all outgoing invoice payments for accounting software integration. Use accountCash/accountBank/accountCard to override the chart-of-accounts for this export (defaults come from the company’s stored SAGA settings; SAGA requires the leaf analytic for cards, e.g. 5125.2).',
     inputSchema: z.object({
+      accountCash: z.string().optional().describe('Override cash account (e.g. 5311)'),
+      accountBank: z.string().optional().describe('Override bank transfer account (e.g. 5121)'),
+      accountCard: z.string().optional().describe('Override card analytic account (e.g. 5125.2)'),
       companyId: z
         .string()
         .optional()
@@ -1332,8 +1335,20 @@ export const tools = [
       const companyId = getCompanyId(params);
       if (!companyId) return noCompanySelected();
 
+      const { accountCash, accountBank, accountCard } = params as {
+        accountCash?: string;
+        accountBank?: string;
+        accountCard?: string;
+      };
+
+      const query: Record<string, string> = {};
+      if (accountCash) query.accountCash = accountCash;
+      if (accountBank) query.accountBank = accountBank;
+      if (accountCard) query.accountCard = accountCard;
+
       const result = await apiRequest('/api/v1/invoices/export/receipts-saga-xml', {
         companyId,
+        query,
       });
       return formatResponse(result);
     },
@@ -1342,8 +1357,11 @@ export const tools = [
   {
     name: 'invoices_export_payments_saga_xml',
     description:
-      'Export supplier payments (plati) in Saga XML format. Exports all incoming invoice payments for accounting software integration.',
+      'Export supplier payments (plati) in Saga XML format. Exports all incoming invoice payments for accounting software integration. Use accountCash/accountBank/accountCard to override the chart-of-accounts for this export (defaults come from the company’s stored SAGA settings).',
     inputSchema: z.object({
+      accountCash: z.string().optional().describe('Override cash account (e.g. 5311)'),
+      accountBank: z.string().optional().describe('Override bank transfer account (e.g. 5121)'),
+      accountCard: z.string().optional().describe('Override card analytic account (e.g. 5125.2)'),
       companyId: z
         .string()
         .optional()
@@ -1354,8 +1372,20 @@ export const tools = [
       const companyId = getCompanyId(params);
       if (!companyId) return noCompanySelected();
 
+      const { accountCash, accountBank, accountCard } = params as {
+        accountCash?: string;
+        accountBank?: string;
+        accountCard?: string;
+      };
+
+      const query: Record<string, string> = {};
+      if (accountCash) query.accountCash = accountCash;
+      if (accountBank) query.accountBank = accountBank;
+      if (accountCard) query.accountCard = accountCard;
+
       const result = await apiRequest('/api/v1/invoices/export/payments-saga-xml', {
         companyId,
+        query,
       });
       return formatResponse(result);
     },
