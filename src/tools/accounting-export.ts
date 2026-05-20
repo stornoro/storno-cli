@@ -95,6 +95,16 @@ export const tools = [
         .partial()
         .optional()
         .describe('SAGA only: per-export chart-of-accounts overrides; missing keys fall back to stored settings'),
+      currencyAccounts: z
+        .record(
+          z.object({
+            cash: z.string().optional().describe('Cash account for this currency, e.g. 5314'),
+            bank: z.string().optional().describe('Bank account for this currency, e.g. 5124'),
+            card: z.string().optional().describe('Card analytic for this currency, e.g. 5125.1'),
+          }).partial(),
+        )
+        .optional()
+        .describe('SAGA only: per-currency account overrides keyed by ISO 4217 code (USD, EUR, ...). Receipts/payments are split into one SAGA XML file per currency when more than one currency is present. Missing per-currency fields fall back to the RON defaults.'),
       companyId: z
         .string()
         .optional()
@@ -113,6 +123,7 @@ export const tools = [
         exportAccounts,
         exportBnr,
         accounts,
+        currencyAccounts,
       } = params as {
         target: string;
         dateFrom?: string;
@@ -121,6 +132,7 @@ export const tools = [
         exportAccounts?: boolean;
         exportBnr?: boolean;
         accounts?: Record<string, string | undefined>;
+        currencyAccounts?: Record<string, Record<string, string | undefined>>;
       };
 
       const body: Record<string, unknown> = { target };
@@ -132,6 +144,7 @@ export const tools = [
       if (exportAccounts !== undefined) options.exportAccounts = exportAccounts;
       if (exportBnr !== undefined) options.exportBnr = exportBnr;
       if (accounts && Object.keys(accounts).length > 0) options.accounts = accounts;
+      if (currencyAccounts && Object.keys(currencyAccounts).length > 0) options.currencyAccounts = currencyAccounts;
       if (Object.keys(options).length > 0) body.options = options;
 
       const result = await apiRequest('/api/v1/accounting-export/zip', {
