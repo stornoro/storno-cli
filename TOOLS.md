@@ -3458,6 +3458,86 @@ List available external storage providers with configuration requirements.
 
 ---
 
+## White-label
+
+### `white_label_config_get`
+
+Get the organization's white-label branding configuration (Business plan). Returns entitlement plus the custom app name, logo URL, accent color, and whether Storno branding is removed from PDFs and client emails.
+
+*No parameters required.*
+
+### `white_label_config_update`
+
+Create or update the organization's white-label branding (Business plan only). Set a custom app name and accent color, toggle white-label on/off, and remove the "Storno.ro" footer from generated PDFs and the emails your clients receive.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `enabled` | boolean | No | Enable or disable white-label branding |
+| `appName` | string | No | Custom app name (max 100 chars, null to clear) |
+| `primaryColor` | string | No | Accent color in hex (e.g., "#2563eb"), null to clear |
+| `removeBranding` | boolean | No | Remove the "Storno.ro" footer from PDFs and client emails |
+| `customDomain` | string | No | Custom domain for the app and client links (null to clear); changing it resets verification |
+
+### `white_label_config_verify_domain`
+
+Verify the custom domain by checking that the `_storno-verify.<domain>` DNS TXT record has been published. On success the domain becomes active for client links.
+
+*No parameters required.*
+
+---
+
+## Email sender
+
+### `mailer_config_get`
+
+Get the organization's custom email sender (SMTP) configuration (Business plan). The password is never returned.
+
+*No parameters required.*
+
+### `mailer_config_update`
+
+Create or update the organization's custom email sender (Business plan only). Client documents are then sent through this SMTP server from your own address. Omit the password on update to keep the saved one.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `enabled` | boolean | No | Enable or disable the custom sender |
+| `host` | string | No | SMTP host |
+| `port` | number | No | SMTP port (587 STARTTLS, 465 SSL) |
+| `encryption` | string | No | `tls` (STARTTLS), `ssl` (implicit), or `none` |
+| `username` | string | No | SMTP username |
+| `password` | string | No | SMTP password (omit to keep the saved one) |
+| `fromAddress` | string | No | From address (must be authorized on the SMTP server) |
+| `fromName` | string | No | Display name for the sender |
+
+### `mailer_config_test`
+
+Send a test message through the custom email sender to verify the SMTP settings.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `testEmail` | string | No | Recipient for the test message (defaults to the from address) |
+| `host` | string | No | Override host |
+| `port` | number | No | Override port |
+| `encryption` | string | No | Override encryption |
+| `username` | string | No | Override username |
+| `password` | string | No | Override password |
+| `fromAddress` | string | No | Override from address |
+| `fromName` | string | No | Override from name |
+
+### `mailer_config_delete`
+
+Delete the custom email sender. Client documents revert to the default Storno address.
+
+*No parameters required.*
+
+---
+
 ## Import
 
 ### `import_sources`

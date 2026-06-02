@@ -53,6 +53,8 @@ import { tools as accountingExportTools } from './tools/accounting-export.js';
 import { tools as backupTools } from './tools/backup.js';
 import { tools as borderouTools } from './tools/borderou.js';
 import { tools as storageConfigTools } from './tools/storage-config.js';
+import { tools as whiteLabelConfigTools } from './tools/white-label-config.js';
+import { tools as mailerConfigTools } from './tools/mailer-config.js';
 import { tools as importTools } from './tools/import.js';
 import { tools as cpvCodesTools } from './tools/cpv-codes.js';
 import { tools as ncCodesTools } from './tools/nc-codes.js';
@@ -107,6 +109,8 @@ const allTools: ToolDef[] = [
   ...backupTools,
   ...borderouTools,
   ...storageConfigTools,
+  ...whiteLabelConfigTools,
+  ...mailerConfigTools,
   ...importTools,
   ...cpvCodesTools,
   ...ncCodesTools,
