@@ -48,6 +48,12 @@ export const tools = [
         .boolean()
         .optional()
         .describe('Show bank account information on PDFs (default: true)'),
+      showVatInRon: z
+        .boolean()
+        .optional()
+        .describe(
+          'Show the VAT amount converted to RON on foreign-currency invoices (default: true). Legally required (Cod Fiscal art. 319 (20) j) for RON VAT payers issuing in foreign currency.',
+        ),
       footerText: z
         .string()
         .optional()

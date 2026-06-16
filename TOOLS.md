@@ -3145,6 +3145,50 @@ Validate a self-hosted license key and retrieve the current plan, features, and 
 
 ---
 
+## PDF Template Config
+
+### `pdf_template_config_get`
+
+Get the active company's PDF template configuration (template design, brand color, font, display toggles, default notes/payment terms, and per-label overrides).
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `companyId` | string | No | Company UUID (overrides configured default) |
+
+### `pdf_template_config_update`
+
+Update the active company's PDF template configuration. Only the provided fields are changed.
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `companyId` | string | No | Company UUID (overrides configured default) |
+| `templateSlug` | string | No | Template design slug (`classic`, `modern`, `minimal`, `bold`) |
+| `primaryColor` | string | No | Primary brand color in hex format (e.g., `#2563eb`) |
+| `fontFamily` | string | No | CSS font family for the PDF (e.g., `DejaVu Sans`) |
+| `showLogo` | boolean | No | Show company logo on PDFs (default: true) |
+| `showBankInfo` | boolean | No | Show bank account information on PDFs (default: true) |
+| `showVatInRon` | boolean | No | Show the VAT amount converted to RON on foreign-currency invoices (default: true). Legally required (Cod Fiscal art. 319 (20) j) for RON VAT payers issuing in foreign currency. |
+| `footerText` | string | No | Custom footer text displayed at the bottom of PDFs |
+| `customCss` | string | No | Custom CSS styles injected into the PDF template |
+
+### `pdf_template_config_templates`
+
+List all available PDF template designs with their slugs, names, descriptions, and default colors.
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `companyId` | string | No | Company UUID (overrides configured default) |
+
+### `pdf_template_config_preview`
+
+Generate an HTML preview of a PDF template with sample invoice data, applying the supplied (unsaved) configuration overrides.
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `companyId` | string | No | Company UUID (overrides configured default) |
+
+---
+
 ## Company Registry
 
 ### `company_registry_search`
