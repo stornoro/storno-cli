@@ -442,6 +442,17 @@ Cancel an issued invoice. Requires a cancellation reason (minimum 10 characters)
 | `reason` | string | Yes | Reason for cancellation (minimum 10 characters) |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
+### `invoices_sync_client`
+
+Resync a single invoice with its client's current profile data (receiver name, CUI/CNP, buyer snapshot, VAT rules). Only allowed while the invoice has not been uploaded to ANAF (or was rejected) and is not cancelled. Cached XML/PDF files are invalidated so they regenerate with the corrected data. Use `clients_sync_invoices` to resync all unsent invoices of a client at once.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `uuid` | string | Yes | Invoice UUID to resync with its client's current data |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
 ### `invoices_restore`
 
 Restore a cancelled invoice back to "draft" status. Only for accidental cancellations. Cannot restore if the invoice was submitted to ANAF, has credit notes, or has recorded payments. The invoice can then be edited and reissued.
@@ -807,6 +818,17 @@ Update an existing client. Only provided fields are updated; omitted fields rema
 | `notes` | string | No | Internal notes |
 | `idNumber` | string | No | Client identification number (personal ID, passport, etc.) |
 | `currency` | string | No | Preferred currency (ISO 4217, e.g., EUR, USD, RON) |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+### `clients_sync_invoices`
+
+Resync all unsent invoices with the client's current profile data (name, CUI, tax details). Unlike the automatic propagation on client update (current month only), this also rewrites older invoices, as long as they were not uploaded to ANAF and are not cancelled. Cached XML/PDF files are invalidated so they regenerate with the new data. Returns the number of invoices updated.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `uuid` | string | Yes | Client UUID whose unsent invoices should be resynced |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `clients_delete`

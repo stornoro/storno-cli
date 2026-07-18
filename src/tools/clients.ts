@@ -191,6 +191,31 @@ export const tools = [
   },
 
   {
+    name: 'clients_sync_invoices',
+    description:
+      'Resync all unsent invoices with the client\'s current profile data (name, CUI, tax details). Unlike the automatic propagation on client update (current month only), this also rewrites older invoices, as long as they were not uploaded to ANAF and are not cancelled. Cached XML/PDF files are invalidated so they regenerate with the new data. Returns the number of invoices updated.',
+    inputSchema: z.object({
+      uuid: z.string().describe('Client UUID whose unsent invoices should be resynced'),
+      companyId: z
+        .string()
+        .optional()
+        .describe('Company UUID override (uses active company if not set)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const companyId = getCompanyId(params);
+      if (!companyId) return noCompanySelected();
+
+      const { uuid } = params as { uuid: string };
+      const result = await apiRequest(`/api/v1/clients/${uuid}/sync-invoices`, {
+        method: 'POST',
+        companyId,
+      });
+      return formatResponse(result);
+    },
+  },
+
+  {
     name: 'clients_delete',
     description:
       'Permanently delete a client by UUID. Clients with existing invoices or documents cannot be deleted.',
