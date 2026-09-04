@@ -155,7 +155,7 @@ export const tools = [
   {
     name: 'spv_request_types',
     description:
-      'Catalog of what can be requested from ANAF SPV (solicitari): reports (Fisa Rol, VECTOR FISCAL, Situatie Sintetica, Obligatii de plata, Istoric declaratii, Bilant), copies of filed declarations (D300, D394, D112, D212 ...), Duplicat Recipisa, Adeverinte Venit, certificates, decisions. Each entry lists the required and optional parameters (an, luna, motiv, numar_inregistrare, cui_pui, lunai/lunas), the first year with data and ANAF notes; also the exact reasons accepted for income certificates.',
+      'Catalog of what can be requested from ANAF SPV (solicitari): reports (Fisa Rol, VECTOR FISCAL, Situatie Sintetica, Obligatii de plata, Istoric declaratii, Bilant), copies of filed declarations (D300, D394, D112, D212 ...), Duplicat Recipisa, Adeverinte Venit, certificates, decisions. Each entry lists the required and optional parameters (an, luna, motiv, numar_inregistrare, cui_pui, lunai/lunas), the first year with data, ANAF notes and wsSupported (false = the type exists only in the SPV website form; the web service answers "tip raport necunoscut", e.g. C168, certificates, decisions); also the exact reasons accepted for income certificates.',
     inputSchema: z.object({}),
     handler: async (): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
