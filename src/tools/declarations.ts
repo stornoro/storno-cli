@@ -237,7 +237,7 @@ export const tools = [
   {
     name: 'declarations_sync',
     description:
-      'Sync declarations from ANAF for a given year. Discovers filed declarations via SPV messages, creates missing local records, downloads recipise, and updates in-flight statuses. Returns 202 (async processing).',
+      'RETIRED server-side sync: ANAF SPVWS2 accepts only the qualified certificate (mTLS), so this endpoint now answers 409 AGENT_REQUIRED. Declarations and SPV messages are pulled through the local storno-agent from the web app (declarations page or the SPV documents page); the tools spv_sync_prepare / spv_sync_agent_result cover the same flow for automation.',
     inputSchema: z.object({
       year: z
         .number()
@@ -268,7 +268,7 @@ export const tools = [
   {
     name: 'declarations_refresh_statuses',
     description:
-      'Refresh statuses for all in-flight (submitted/processing) declarations from ANAF. Checks SPV messages for status updates and downloads recipise. Returns 202 (async processing).',
+      'RETIRED server-side status refresh: answers 409 AGENT_REQUIRED because ANAF SPVWS2 requires the qualified certificate (mTLS). Refresh statuses from the web app through the local storno-agent.',
     inputSchema: z.object({
       companyId: z
         .string()
