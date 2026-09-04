@@ -488,7 +488,7 @@ Download the UBL 2.1 XML file for an issued invoice. Returns the XML text conten
 
 ### `invoices_email`
 
-Send an invoice via email with optional PDF and XML attachments. Use invoices_email_defaults first to get pre-filled subject and body. Emails are sent asynchronously via queue. PDF attachment requires Pro plan. Recipients (to, cc, bcc) must be emails of the company's clients; other addresses are rejected with EMAIL_RECIPIENT_NOT_CLIENT.
+Send an invoice via email with optional PDF and XML attachments. Use invoices_email_defaults first to get pre-filled subject and body. Emails are sent asynchronously via queue. PDF attachment requires Pro plan. Recipients (to, cc, bcc) must be client emails registered on the company; other addresses are rejected with EMAIL_RECIPIENT_NOT_CLIENT.
 
 **Parameters:**
 
@@ -1897,7 +1897,7 @@ Restore a cancelled delivery note back to draft status. Only cancelled delivery 
 
 ### `delivery_notes_email`
 
-Send a delivery note to a client via email with the PDF attached. Supports custom subject, body, CC, and BCC recipients. Recipients (to, cc, bcc) must be emails of the company's clients; other addresses are rejected with EMAIL_RECIPIENT_NOT_CLIENT.
+Send a delivery note to a client via email with the PDF attached. Supports custom subject, body, CC, and BCC recipients. Recipients (to, cc, bcc) must be client emails registered on the company; other addresses are rejected with EMAIL_RECIPIENT_NOT_CLIENT.
 
 **Parameters:**
 
@@ -2183,7 +2183,7 @@ Restore a cancelled receipt back to draft status. Only cancelled receipts can be
 
 ### `receipts_email`
 
-Send a receipt (bon fiscal) to a customer via email with the PDF attached. Supports custom subject, body, CC, and BCC recipients. Recipients (to, cc, bcc) must be emails of the company's clients; other addresses are rejected with EMAIL_RECIPIENT_NOT_CLIENT.
+Send a receipt (bon fiscal) to a customer via email with the PDF attached. Supports custom subject, body, CC, and BCC recipients. Recipients (to, cc, bcc) must be client emails registered on the company; other addresses are rejected with EMAIL_RECIPIENT_NOT_CLIENT.
 
 **Parameters:**
 

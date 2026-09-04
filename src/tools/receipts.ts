@@ -366,7 +366,7 @@ export const tools = [
   {
     name: 'receipts_email',
     description:
-      'Send a receipt (bon fiscal) to a customer via email with the PDF attached. Supports custom subject, body, CC, and BCC recipients. Recipients (to, cc, bcc) must be emails of the company's clients; other addresses are rejected with EMAIL_RECIPIENT_NOT_CLIENT.',
+      'Send a receipt (bon fiscal) to a customer via email with the PDF attached. Supports custom subject, body, CC, and BCC recipients. Recipients (to, cc, bcc) must be client emails registered on the company; other addresses are rejected with EMAIL_RECIPIENT_NOT_CLIENT.',
     inputSchema: z.object({
       uuid: z.string().describe('UUID of the receipt to send'),
       companyId: z.string().optional().describe('Company UUID (overrides configured default)'),

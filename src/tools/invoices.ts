@@ -846,7 +846,7 @@ export const tools = [
   {
     name: 'invoices_email',
     description:
-      'Send an invoice via email with optional PDF and XML attachments. Use invoices_email_defaults first to get pre-filled subject and body. Emails are sent asynchronously via queue. PDF attachment requires Pro plan. Recipients (to, cc, bcc) must be emails of the company's clients; other addresses are rejected with EMAIL_RECIPIENT_NOT_CLIENT.',
+      'Send an invoice via email with optional PDF and XML attachments. Use invoices_email_defaults first to get pre-filled subject and body. Emails are sent asynchronously via queue. PDF attachment requires Pro plan. Recipients (to, cc, bcc) must be client emails registered on the company; other addresses are rejected with EMAIL_RECIPIENT_NOT_CLIENT.',
     inputSchema: z.object({
       uuid: z.string().describe('Invoice UUID to email'),
       companyId: z
