@@ -69,7 +69,7 @@ export const tools = [
   {
     name: 'declaration_forms',
     description:
-      'ANAF declaration forms Storno can build from plain JSON for you (today: C168 rent contract registration/amendment/termination). Returns type, title and description of each form. Public, no account.',
+      'ANAF declaration forms Storno can build from plain JSON for you (today: C168 rent contract registration/amendment/termination, D212 Declarația unică for rent income with tax and CASS computed). Returns type, title and description of each form. Public, no account.',
     inputSchema: z.object({}),
     handler: async (): Promise<string> => formatResponse(await apiRequest('/api/v1/public/declarations/forms', { noAuth: true })),
   },
@@ -95,7 +95,7 @@ export const tools = [
   {
     name: 'declaration_build',
     description:
-      "Build an ANAF declaration from plain JSON (schema from declaration_form_spec): Storno writes the XML, applies its own rules (required fields, address codes, quotas, postal code, tenant CNP …), validates it with ANAF's DUKIntegrator and, for C168, with ANAF's online validator behind the web form (the authoritative BR-C168 rules). Returns valid, xml, issues[{level, code, field, message}] and validation{duk, anafOnline}. Loop: fix issues → build again until valid=true, then declaration_pdf. Public, nothing stored, 60 requests/hour per IP.",
+      "Build an ANAF declaration from plain JSON (schema from declaration_form_spec): Storno writes the XML, applies its own rules (required fields, address codes, quotas, postal code, tenant CNP …), does the arithmetic (D212: 20 % forfait, 10 % tax, CASS tiers on the minimum wage), validates it with ANAF's DUKIntegrator and, for C168, with ANAF's online validator behind the web form (the authoritative BR-C168 rules). Returns valid, xml, issues[{level: error|warning|info, code, field, message}] (info = computed amounts to explain to the user) and validation{duk, anafOnline}. Loop: fix issues → build again until valid=true, then declaration_pdf. Public, nothing stored, 60 requests/hour per IP.",
     inputSchema: z.object({
       type: z.string().describe('Form code, e.g. C168'),
       input: z.record(z.string(), z.unknown()).describe('The form input (see declaration_form_spec → input / example)'),

@@ -3300,7 +3300,7 @@ Standard Romanian legal documents generated from fields, as PDF + HTML (public, 
 
 ### `declaration_forms` / `declaration_form_spec` / `declaration_build` / `declaration_pdf`
 
-Build an ANAF declaration from plain JSON, the way an assistant works: it reads the user's documents locally, asks Storno for the form specification, fills the input, builds and validates until clean, produces the PDF, then files it through the local agent or hands it to the user for SPV. Public: no account, nothing stored, 60 requests/hour per IP. Forms today: **C168** (registration, amendment, termination of rental contracts; scanned contract as attachment).
+Build an ANAF declaration from plain JSON, the way an assistant works: it reads the user's documents locally, asks Storno for the form specification, fills the input, builds and validates until clean, produces the PDF, then files it through the local agent or hands it to the user for SPV. Public: no account, nothing stored, 60 requests/hour per IP. Forms today: **C168** (registration, amendment, termination of rental contracts; scanned contract as attachment) and **D212** Declarația unică, rent-income scenario (chapter I.1 per contract with 20 % forfait and 10 % tax, obligations summary, CASS on the 6/12/24 minimum-wage thresholds; no attachment). The D212 build returns `info` issues with the amounts due.
 
 | Tool | Parameters | Returns |
 |---|---|---|
