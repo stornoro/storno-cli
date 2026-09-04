@@ -3277,8 +3277,22 @@ Local Storno Agent tools (the agent runs on the user's computer with the qualifi
 |---|---|---|
 | `agent_status` | none | agent version, update availability |
 | `agent_certificates` | none | certificates the agent can use (id, subject, issuer, expiry) |
-| `agent_sign_pdf` | `files[]` (paths or directories), `certificateId`, `pin?`, `outDir?` | signs every PDF with the certificate (PAdES), writes `<name>.signed.pdf`; stops at the first PIN error |
+| `agent_sign_pdf` | `files[]` (paths or directories), `certificateId`, `pin?`, `outDir?`, `visible?`, `signerName?` | signs every PDF with the certificate (PAdES), writes `<name>.signed.pdf`; stops at the first PIN error |
 | `agent_submit_declaration_pdf` | `file`, `certificateId`, `pin?`, `fileName?` | signs a DUKIntegrator PDF and uploads it to the e-guvernare declarations portal; returns ANAF's upload index |
+
+**Mass signing.** `agent_sign_pdf` takes any mix of files and directories; a directory means every `*.pdf` inside it (already signed `*.signed.pdf` copies are skipped, so re-running is safe). Files are signed one after another on the token, each gets its own `<name>.signed.pdf` next to the original or in `outDir`, and the result lists `signed`, `failed` and one row per file. A wrong PIN stops the batch immediately (`aborted: true`) so the token is never locked by a loop; other per-file errors (corrupt PDF, encrypted PDF) are reported and the batch continues. A batch of 50 contracts takes about two minutes on a USB token.
+
+```json
+{ "files": ["~/Contracte/2026-09", "oferta.pdf"], "certificateId": "3746…", "outDir": "~/Contracte/semnate", "visible": true }
+```
+
+```json
+{ "signed": 12, "failed": 1, "aborted": false,
+  "files": [ { "file": "…/contract-01.pdf", "signed": "…/semnate/contract-01.signed.pdf", "bytes": 168210 }, …,
+             { "file": "…/scan.pdf", "error": "PDF is encrypted" } ] }
+```
+
+The signature is a PAdES `adbe.pkcs7.detached` signature (SHA-256, the qualified certificate embedded), verifiable in Adobe Reader, `pdfsig`, ANAF's portal and any eIDAS validator; it is invisible unless `visible: true`, which draws a footer box on the last page. One signature per run: sign the same file again to add a second one. See the [agent guide](https://docs.storno.ro/agent#signing-pdfs) for the HTTP contract behind the tool.
 
 ### `document_types` / `document_generate`
 

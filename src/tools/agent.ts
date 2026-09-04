@@ -90,6 +90,8 @@ export const tools = [
       certificateId: z.string().describe('Certificate id from agent_certificates'),
       pin: z.string().optional().describe('Token PIN; defaults to STORNO_AGENT_PIN'),
       outDir: z.string().optional().describe('Directory for the signed copies (default: next to each file)'),
+      visible: z.boolean().optional().describe('Draw a visible signature box in the footer of the last page ("Semnat digital de …", date, issuer). Default: invisible signature (still verifiable in Adobe Reader / ANAF)'),
+      signerName: z.string().optional().describe('Name shown in the visible box (default: the certificate subject)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const pin = pinFrom(params);
@@ -97,7 +99,7 @@ export const tools = [
       const files = pdfFiles(params.files as string[]);
       if (files.length === 0) return fail('No PDF files found');
       const items = files.map((f) => ({ name: basename(f), pdf: readFileSync(f).toString('base64') }));
-      const res = await agent('/sign', { certificateId: params.certificateId, pin, items }, 120_000 * items.length);
+      const res = await agent('/sign', { certificateId: params.certificateId, pin, items, visible: params.visible === true, signerName: params.signerName }, 120_000 * items.length);
       if (res.error && !res.results) return fail(String(res.error));
       const report = (res.results as Array<{ index: number; name: string; pdf?: string; bytes?: number; error?: string }>).map((r) => {
         if (!r.pdf) return { file: files[r.index], error: r.error };
