@@ -51,6 +51,7 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [NC Codes](#nc-codes)
 - [Telemetry](#telemetry)
 - [Tax Declarations](#tax-declarations)
+- [SPV Inbox (ANAF documents)](#spv-inbox-anaf-documents)
 
 **Total tools: 249**
 
@@ -3922,3 +3923,37 @@ Submit the ANAF response received via the local agent back to the server. The se
 **Total tools: 249**
 
 Generated from storno-cli source on 2026-03-05
+
+---
+
+## SPV Inbox (ANAF documents)
+
+Archive of every message in a company's ANAF Spatiul Privat Virtual inbox: somatii (enforcement notices), decizii, notificari, adrese, rapoarte de analiza de risc, recipise, certificate, plati, extrase de cont... Each message is classified by `category` and `severity` (`critical` / `high` / `normal` / `low`); critical and high documents trigger push + email notifications, the rest are summarised. PDFs are archived in the company storage and removed after the company's retention period (default 5 years; the row stays, marked `purgedAt`).
+
+Listing and downloading from ANAF require the qualified certificate (mTLS), which only the local **storno-agent** holds. The three-step flow is `spv_sync_prepare` → agent GET → `spv_sync_agent_result` → agent GET each PDF → `spv_document_upload`. The web app runs this flow automatically from the "Documente SPV" page.
+
+### `spv_documents_list`
+List archived SPV documents with filters.
+
+**Parameters:** `category`, `severity`, `unread`, `search`, `from`, `to` (YYYY-MM-DD), `page`, `limit`, `companyId`
+
+### `spv_documents_stats`
+Totals, unread count, PDFs pending download, breakdown by category and severity.
+
+### `spv_documents_get`
+Full details of one document. **Parameters:** `uuid`, `companyId`
+
+### `spv_documents_download`
+Save the archived PDF to `outputPath`. **Parameters:** `uuid`, `outputPath`, `companyId`
+
+### `spv_documents_mark_read`
+Mark one document (or all) as read. **Parameters:** `uuid` (optional), `companyId`
+
+### `spv_sync_prepare`
+Returns the ANAF `listaMesaje` URL for the agent and pending downloads. **Parameters:** `days` (1-60), `companyId`
+
+### `spv_sync_agent_result`
+Relay ANAF's listing; archives, classifies, notifies; returns `documents[]` to fetch. **Parameters:** `statusCode`, `body`, `companyId`
+
+### `spv_document_upload`
+Store a fetched PDF (base64). **Parameters:** `uuid`, `statusCode`, `bodyBase64`, `companyId`
