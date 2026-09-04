@@ -152,4 +152,82 @@ export const tools = [
       return formatResponse(res);
     },
   },
+  {
+    name: 'spv_request_types',
+    description:
+      'Catalog of what can be requested from ANAF SPV (solicitari): reports (Fisa Rol, VECTOR FISCAL, Situatie Sintetica, Obligatii de plata, Istoric declaratii, Bilant), copies of filed declarations (D300, D394, D112, D212 ...), Duplicat Recipisa, Adeverinte Venit, certificates, decisions. Each entry lists the required and optional parameters (an, luna, motiv, numar_inregistrare, cui_pui, lunai/lunas), the first year with data and ANAF notes; also the exact reasons accepted for income certificates.',
+    inputSchema: z.object({}),
+    handler: async (): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const res = await apiRequest('/api/v1/spv/requests/types', { method: 'GET' });
+      return formatResponse(res);
+    },
+  },
+  {
+    name: 'spv_requests_list',
+    description: 'Requests sent to ANAF SPV for the company, newest first, with status (pending, requested, answered, error), ANAF id_solicitare and the archived answer document id when it arrived.',
+    inputSchema: z.object({
+      page: z.number().int().min(1).optional(),
+      limit: z.number().int().min(1).max(100).optional(),
+      status: z.enum(['pending', 'requested', 'answered', 'error']).optional(),
+      companyId: companyIdSchema,
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const res = await apiRequest('/api/v1/spv/requests', {
+        method: 'GET',
+        query: { page: params.page as number | undefined, limit: params.limit as number | undefined, status: params.status as string | undefined },
+        companyId: params.companyId as string | undefined,
+      });
+      return formatResponse(res);
+    },
+  },
+  {
+    name: 'spv_request_prepare',
+    description:
+      'Step 1 of an SPV request: validate the type and parameters (see spv_request_types) and get the ANAF cerere URL the local storno-agent must GET with the qualified certificate. Returns requestId; relay ANAF\'s JSON answer with spv_request_agent_result. The answer document itself arrives later in listaMesaje with the same id_solicitare and is archived by the inbox sync.',
+    inputSchema: z.object({
+      type: z.string().describe('Exact ANAF request type, e.g. "Fisa Rol", "D300", "Duplicat Recipisa", "Adeverinte Venit"'),
+      params: z.record(z.string()).optional().describe('Parameters by name: an, luna, motiv, numar_inregistrare, cui_pui, lunai, lunas'),
+      companyId: companyIdSchema,
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const res = await apiRequest('/api/v1/spv/requests/prepare', {
+        method: 'POST',
+        body: { type: params.type, params: params.params ?? {} },
+        companyId: params.companyId as string | undefined,
+      });
+      return formatResponse(res);
+    },
+  },
+  {
+    name: 'spv_request_agent_result',
+    description: 'Step 2 of an SPV request: relay the raw ANAF answer to cerere ({id_solicitare, titlu} or {eroare}). Records the ANAF request id or the error on the request.',
+    inputSchema: z.object({
+      requestId: z.string().describe('Request UUID from spv_request_prepare'),
+      statusCode: z.number().int(),
+      body: z.string().describe('Raw ANAF response body (JSON)'),
+      companyId: companyIdSchema,
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const res = await apiRequest(`/api/v1/spv/requests/${params.requestId}/agent-result`, {
+        method: 'POST',
+        body: { statusCode: params.statusCode, body: params.body },
+        companyId: params.companyId as string | undefined,
+      });
+      return formatResponse(res);
+    },
+  },
+  {
+    name: 'spv_request_delete',
+    description: 'Delete a pending or failed SPV request record (answered requests keep their history).',
+    inputSchema: z.object({ requestId: z.string(), companyId: companyIdSchema }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const res = await apiRequest(`/api/v1/spv/requests/${params.requestId}`, { method: 'DELETE', companyId: params.companyId as string | undefined });
+      return formatResponse(res);
+    },
+  },
 ];

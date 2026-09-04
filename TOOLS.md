@@ -3960,6 +3960,37 @@ Save the archived PDF to `outputPath`. **Parameters:** `uuid`, `outputPath`, `co
 ### `spv_documents_mark_read`
 Mark one document (or all) as read. **Parameters:** `uuid` (optional), `companyId`
 
+### `spv_request_types`
+
+Catalog of ANAF SPV requests (solicitari) with required/optional parameters, first year with data and ANAF notes, plus the exact reasons accepted for income certificates.
+
+### `spv_requests_list`
+
+Requests sent to ANAF for the company: type, parameters, status (`pending`, `requested`, `answered`, `error`), ANAF `id_solicitare`, answer document id.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `page`, `limit` | number | no | Pagination |
+| `status` | string | no | Filter by status |
+| `companyId` | string | no | Company scope |
+
+### `spv_request_prepare`
+
+Step 1 of a request: validates type + parameters and returns `requestId` and the ANAF `cerere` URL the agent must GET with the certificate.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `type` | string | yes | Exact ANAF type, e.g. `Fisa Rol`, `D300`, `Duplicat Recipisa`, `Adeverinte Venit` |
+| `params` | object | no | `an`, `luna`, `motiv`, `numar_inregistrare`, `cui_pui`, `lunai`, `lunas` as required by the type |
+
+### `spv_request_agent_result`
+
+Step 2: relay ANAF's answer (`{id_solicitare, titlu}` or `{eroare}`) for `requestId`. The answer document arrives later in the inbox and is linked automatically.
+
+### `spv_request_delete`
+
+Delete a pending or failed request record.
+
 ### `spv_sync_prepare`
 Returns the ANAF `listaMesaje` URL for the agent and pending downloads. **Parameters:** `days` (1-60), `companyId`
 
