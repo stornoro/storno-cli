@@ -16,6 +16,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { createMcpServer } from './server.js';
 import { getConfig } from './config.js';
 import { getLandingHtml } from './landing.js';
+import { LOGO_PNG_BASE64 } from './logo-asset.js';
 
 interface Session {
   transport: StreamableHTTPServerTransport;
@@ -332,6 +333,13 @@ export function startHttpServer(port: number, host: string): void {
     }
 
     // Favicon (avoid 404 noise)
+    if (url.pathname === '/logo.png' && req.method === 'GET') {
+      const png = Buffer.from(LOGO_PNG_BASE64, 'base64');
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': png.length, 'Cache-Control': 'public, max-age=86400' });
+      res.end(png);
+      return;
+    }
+
     if (url.pathname === '/favicon.ico') {
       res.writeHead(204);
       res.end();

@@ -62,7 +62,7 @@ export function getLandingHtml(baseUrl: string): string {
     <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <a href="https://storno.ro" target="_blank" class="flex items-center gap-2">
-          <img src="https://storno.ro/_nuxt/logo.DdVqVFnw.png" alt="Storno.ro" class="h-7 w-auto">
+          <img src="/logo.png" alt="Storno.ro" class="h-7 w-auto">
         </a>
         <span class="text-xs font-medium bg-primary-500/10 text-primary-600 px-2 py-0.5 rounded-full ring-1 ring-inset ring-primary-500/25">MCP Server</span>
       </div>
@@ -113,7 +113,7 @@ export function getLandingHtml(baseUrl: string): string {
     <section class="pb-14 fade-in-delay relative">
       <div class="bg-white border border-zinc-200 rounded-lg p-6 sm:p-8 max-w-2xl shadow-sm">
         <div class="flex items-center gap-3 mb-2">
-          <img src="https://storno.ro/_nuxt/logo.DdVqVFnw.png" alt="Storno" class="h-6 w-auto">
+          <img src="/logo.png" alt="Storno" class="h-6 w-auto">
           <h2 class="text-xl font-bold text-zinc-900">Connect to Claude</h2>
         </div>
         <p class="text-sm text-muted mb-8 leading-relaxed">Connect Claude to Storno MCP, enabling it to manage invoices, clients, and e-Factura through a simple, secure connection without leaving your conversation.</p>
@@ -129,7 +129,7 @@ export function getLandingHtml(baseUrl: string): string {
 
         <p class="text-sm text-zinc-600 mb-3">Then, click the button below to add Storno MCP to your Claude account:</p>
         <a href="https://claude.ai/settings/connectors" target="_blank" class="inline-flex items-center gap-2.5 border border-zinc-200 hover:border-zinc-300 bg-white text-sm font-medium text-zinc-700 px-5 py-2.5 rounded-xl transition-all shadow-sm hover:shadow mb-4">
-          <img src="https://storno.ro/_nuxt/logo.DdVqVFnw.png" alt="" class="h-4 w-auto">
+          <img src="/logo.png" alt="" class="h-4 w-auto">
           Add to Claude
         </a>
 
@@ -286,7 +286,7 @@ export function getLandingHtml(baseUrl: string): string {
   <footer class="border-t border-zinc-200 bg-white">
     <div class="max-w-5xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
       <div class="flex items-center gap-2.5">
-        <img src="https://storno.ro/_nuxt/logo.DdVqVFnw.png" alt="Storno.ro" class="h-4 w-auto opacity-50">
+        <img src="/logo.png" alt="Storno.ro" class="h-4 w-auto opacity-50">
         <span>&copy; ${new Date().getFullYear()} Storno.ro</span>
       </div>
       <div class="flex items-center gap-6">
