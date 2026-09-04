@@ -155,7 +155,7 @@ export const tools = [
   {
     name: 'spv_request_types',
     description:
-      'Catalog of what can be requested from ANAF SPV (solicitari): reports (Fisa Rol, VECTOR FISCAL, Situatie Sintetica, Obligatii de plata, Istoric declaratii, Bilant), copies of filed declarations (D300, D394, D112, D212 ...), Duplicat Recipisa, Adeverinte Venit, certificates, decisions. Each entry lists the required and optional parameters (an, luna, motiv, numar_inregistrare, cui_pui, lunai/lunas), the first year with data, ANAF notes and wsSupported (false = the type exists only in the SPV website form; the web service answers "tip raport necunoscut", e.g. C168, certificates, decisions); also the exact reasons accepted for income certificates.',
+      'Catalog of what can be requested from ANAF SPV (solicitari): reports (Fisa Rol, VECTOR FISCAL, Situatie Sintetica, Obligatii de plata, Istoric declaratii, Bilant), copies of filed declarations (D300, D394, D112, D212 ...), Duplicat Recipisa, Adeverinte Venit, certificates, decisions. Each entry lists the required and optional parameters (an, luna, motiv, numar_inregistrare, cui_pui, lunai/lunas), the first year with data, ANAF notes and wsSupported (false = the web service answers "tip raport necunoscut"; the agent then submits the SPV website form instead, e.g. C168, certificates, decisions); also the exact reasons accepted for income certificates.',
     inputSchema: z.object({}),
     handler: async (): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
@@ -185,7 +185,7 @@ export const tools = [
   {
     name: 'spv_request_prepare',
     description:
-      'Step 1 of an SPV request: validate the type and parameters (see spv_request_types) and get the ANAF cerere URL the local storno-agent must GET with the qualified certificate. Returns requestId; relay ANAF\'s JSON answer with spv_request_agent_result. The answer document itself arrives later in listaMesaje with the same id_solicitare and is archived by the inbox sync.',
+      'Step 1 of an SPV request: validate the type and parameters (see spv_request_types). Returns requestId and channel: "ws" with the ANAF cerere URL the local storno-agent must GET with the certificate, or "web" with a form the agent submits to the SPV website (POST /spv-web-request on the agent) for types the web service lacks (C168, certificates, decisions). Relay the answer with spv_request_agent_result. The answer document itself arrives later in listaMesaje with the same id_solicitare and is archived by the inbox sync.',
     inputSchema: z.object({
       type: z.string().describe('Exact ANAF request type, e.g. "Fisa Rol", "D300", "Duplicat Recipisa", "Adeverinte Venit"'),
       params: z.record(z.string()).optional().describe('Parameters by name: an, luna, motiv, numar_inregistrare, cui_pui, lunai, lunas'),
