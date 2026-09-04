@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { apiRequest } from '../client.js';
 import { formatResponse } from '../utils/errors.js';
 
@@ -39,6 +41,30 @@ export const tools = [
     description: "ANAF street nomenclator for a locality: cod_strada + name (e.g. C168 cod_strada_C). q filters by word prefix, diacritics-insensitive (\"maniu\" finds \"Bld. Iuliu Maniu\"). Streets are cached locally on first use per locality. Public.",
     inputSchema: z.object({ judet: z.string().describe('County code, e.g. 40'), localitate: z.string().describe('Locality code from anaf_nomenclator_localitati, e.g. 6 for Sector 6'), q: z.string().optional().describe('Street name filter'), limit: z.number().int().min(1).max(200).optional() }),
     handler: async (params: Record<string, unknown>): Promise<string> => formatResponse(await apiRequest(`/api/v1/public/anaf/nomenclator/strazi/${encodeURIComponent(String(params.judet))}/${encodeURIComponent(String(params.localitate))}`, { query: { q: params.q as string | undefined, limit: params.limit as number | undefined }, noAuth: true })),
+  },
+  {
+    name: 'document_types',
+    description: 'Standard Romanian legal documents Storno can generate from structured fields (public, nothing stored): conventie_incetare_inchiriere (rental termination agreement between locator and locatar) and declaratie_incetare_contract (the locator\'s sworn statement that a rental contract ended, used as the mandatory C168 attachment). Returns each type with its required fields.',
+    inputSchema: z.object({}),
+    handler: async (): Promise<string> => formatResponse(await apiRequest('/api/v1/public/documents', { noAuth: true })),
+  },
+  {
+    name: 'document_generate',
+    description:
+      "Generate a standard legal document as PDF (and HTML) from fields: 'conventie_incetare_inchiriere' (fields: data_conventie?, locator{nume, adresa, ci_serie?, ci_numar?, cnp?}, locatar{same}, contract{numar, data, adresa_imobil, numar_inregistrare_anaf?, data_inregistrare_anaf?}, data_incetare, termen_utilitati_zile?, garantie{suma?, valuta?, termen_zile?}) or 'declaratie_incetare_contract' (locator{nume, adresa, cnp?}, locatar{nume, cnp?}, contract{numar, data, adresa_imobil, data_inceput, data_sfarsit, chirie?, valuta?, numar_inregistrare_anaf?, data_inregistrare_anaf?}, data_incetare, motiv?, motiv_detalii?, organ_fiscal?, data_declaratie?). Dates as dd.mm.yyyy. Pass outFile to save the PDF locally (then sign it with agent_sign_pdf or have it signed by hand); otherwise the PDF comes back base64. Public, nothing stored.",
+    inputSchema: z.object({
+      type: z.enum(['conventie_incetare_inchiriere', 'declaratie_incetare_contract']),
+      fields: z.record(z.unknown()).describe('Document fields (see description)'),
+      outFile: z.string().optional().describe('Path where the PDF is written; when omitted the response carries pdfBase64'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      const res = await apiRequest(`/api/v1/public/documents/${params.type as string}`, { method: 'POST', body: params.fields as Record<string, unknown>, noAuth: true });
+      if (!res.ok || !params.outFile) return formatResponse(res);
+      const data = res.data as { title: string; pdfBase64: string; html: string };
+      const out = resolve(params.outFile as string);
+      writeFileSync(out, Buffer.from(data.pdfBase64, 'base64'));
+      return formatResponse({ ok: true, status: 200, data: { title: data.title, file: out, bytes: Buffer.byteLength(data.pdfBase64, 'base64') } });
+    },
   },
   {
     name: 'anaf_declaration_status',

@@ -3280,6 +3280,10 @@ Local Storno Agent tools (the agent runs on the user's computer with the qualifi
 | `agent_sign_pdf` | `files[]` (paths or directories), `certificateId`, `pin?`, `outDir?` | signs every PDF with the certificate (PAdES), writes `<name>.signed.pdf`; stops at the first PIN error |
 | `agent_submit_declaration_pdf` | `file`, `certificateId`, `pin?`, `fileName?` | signs a DUKIntegrator PDF and uploads it to the e-guvernare declarations portal; returns ANAF's upload index |
 
+### `document_types` / `document_generate`
+
+Standard Romanian legal documents generated from fields, as PDF + HTML (public, nothing stored): `conventie_incetare_inchiriere` (rental termination agreement) and `declaratie_incetare_contract` (locator's sworn statement, the C168 attachment). `document_generate` takes `type`, `fields` and an optional `outFile` to write the PDF locally, ready for hand signing or `agent_sign_pdf`.
+
 ### `anaf_declaration_status`
 
 Status of a portal filing from ANAF's public StareD112: `index` + `cui`/CNP → `state` (ok, nok, processing, unknown), ANAF wording, recipisa URL.
