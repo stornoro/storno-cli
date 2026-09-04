@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
 import { apiRequest } from '../client.js';
 import { formatResponse } from '../utils/errors.js';
 
@@ -64,6 +64,78 @@ export const tools = [
       const out = resolve(params.outFile as string);
       writeFileSync(out, Buffer.from(data.pdfBase64, 'base64'));
       return formatResponse({ ok: true, status: 200, data: { title: data.title, file: out, bytes: Buffer.byteLength(data.pdfBase64, 'base64') } });
+    },
+  },
+  {
+    name: 'declaration_forms',
+    description:
+      'ANAF declaration forms Storno can build from plain JSON for you (today: C168 rent contract registration/amendment/termination). Returns type, title and description of each form. Public, no account.',
+    inputSchema: z.object({}),
+    handler: async (): Promise<string> => formatResponse(await apiRequest('/api/v1/public/declarations/forms', { noAuth: true })),
+  },
+  {
+    name: 'declaration_form_spec',
+    description:
+      "Everything needed to fill an ANAF declaration form correctly: the JSON input schema Storno expects (fields, required/optional, codes and their meaning, hints), how it maps to the ANAF XML (namespace, every XSD attribute with type and constraints), the business rules ANAF enforces (including the web-form rules the DUK validator misses, e.g. BR-C168-00991/0041/005911), the filing steps and a complete example. Read it before declaration_build. C168 addresses need the codes from anaf_nomenclator_*; never invent CNPs or CUIs.",
+    inputSchema: z.object({
+      type: z.string().describe('Form code, e.g. C168'),
+      xsd: z.boolean().optional().describe('true → return the raw ANAF XSD instead of the spec'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      const type = encodeURIComponent(String(params.type).toUpperCase());
+      if (params.xsd) {
+        const res = await apiRequest(`/api/v1/public/declarations/forms/${type}?xsd=1`, { noAuth: true, binary: true });
+        if (!res.ok) return formatResponse(res);
+        const xsd = Buffer.isBuffer(res.data) ? res.data.toString('utf8') : String(res.data);
+        return formatResponse({ ok: true, status: 200, data: { type: String(params.type).toUpperCase(), xsd } });
+      }
+      return formatResponse(await apiRequest(`/api/v1/public/declarations/forms/${type}`, { noAuth: true }));
+    },
+  },
+  {
+    name: 'declaration_build',
+    description:
+      "Build an ANAF declaration from plain JSON (schema from declaration_form_spec): Storno writes the XML, applies its own rules (required fields, address codes, quotas, postal code, tenant CNP …), validates it with ANAF's DUKIntegrator and, for C168, with ANAF's online validator behind the web form (the authoritative BR-C168 rules). Returns valid, xml, issues[{level, code, field, message}] and validation{duk, anafOnline}. Loop: fix issues → build again until valid=true, then declaration_pdf. Public, nothing stored, 60 requests/hour per IP.",
+    inputSchema: z.object({
+      type: z.string().describe('Form code, e.g. C168'),
+      input: z.record(z.string(), z.unknown()).describe('The form input (see declaration_form_spec → input / example)'),
+      validate: z.boolean().optional().describe('Run the DUK validator (default true)'),
+      online: z.boolean().optional().describe("Also run ANAF's online validator when available (default true)"),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> =>
+      formatResponse(await apiRequest(`/api/v1/public/declarations/forms/${encodeURIComponent(String(params.type).toUpperCase())}/build`, {
+        method: 'POST',
+        body: { input: params.input, validate: params.validate, online: params.online },
+        noAuth: true,
+      })),
+  },
+  {
+    name: 'declaration_pdf',
+    description:
+      "Produce the PDF ANAF accepts for upload: DUKIntegrator renders the validated XML into ANAF's PDF form with the XML embedded and, where required (C168), a zip of attachments embedded (the scanned contract for a registration, the addendum for an amendment, the termination document or the landlord's sworn statement — document_generate — for a termination). Pass local file paths in attachmentPaths and/or base64 attachments (PDF, JPG, PNG, TIFF; 10 MB total). With outFile the PDF is written locally, ready for agent_submit_declaration_pdf (qualified certificate) or manual upload in SPV. Public, nothing stored.",
+    inputSchema: z.object({
+      type: z.string().describe('Form code, e.g. C168'),
+      xml: z.string().describe('The validated declaration XML from declaration_build'),
+      attachmentPaths: z.array(z.string()).optional().describe('Local files to put in the zip'),
+      attachments: z.array(z.object({ name: z.string(), contentBase64: z.string() })).optional(),
+      outFile: z.string().optional().describe('Path where the PDF is written; when omitted the response carries pdfBase64'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      const attachments = [...((params.attachments as Array<{ name: string; contentBase64: string }> | undefined) ?? [])];
+      for (const p of (params.attachmentPaths as string[] | undefined) ?? []) {
+        const abs = resolve(p);
+        attachments.push({ name: basename(abs), contentBase64: readFileSync(abs).toString('base64') });
+      }
+      const res = await apiRequest('/api/v1/public/declarations/pdf', {
+        method: 'POST',
+        body: { type: String(params.type).toUpperCase(), xml: params.xml, attachments },
+        noAuth: true,
+      });
+      if (!res.ok || !params.outFile) return formatResponse(res);
+      const data = res.data as { fileName: string; pdfBase64: string; bytes: number; next: string };
+      const out = resolve(params.outFile as string);
+      writeFileSync(out, Buffer.from(data.pdfBase64, 'base64'));
+      return formatResponse({ ok: true, status: 200, data: { file: out, bytes: data.bytes, next: data.next } });
     },
   },
   {

@@ -3298,6 +3298,31 @@ The signature is a PAdES `adbe.pkcs7.detached` signature (SHA-256, the qualified
 
 Standard Romanian legal documents generated from fields, as PDF + HTML (public, nothing stored): `conventie_incetare_inchiriere` (rental termination agreement) and `declaratie_incetare_contract` (locator's sworn statement, the C168 attachment). `document_generate` takes `type`, `fields` and an optional `outFile` to write the PDF locally, ready for hand signing or `agent_sign_pdf`.
 
+### `declaration_forms` / `declaration_form_spec` / `declaration_build` / `declaration_pdf`
+
+Build an ANAF declaration from plain JSON, the way an assistant works: it reads the user's documents locally, asks Storno for the form specification, fills the input, builds and validates until clean, produces the PDF, then files it through the local agent or hands it to the user for SPV. Public: no account, nothing stored, 60 requests/hour per IP. Forms today: **C168** (registration, amendment, termination of rental contracts; scanned contract as attachment).
+
+| Tool | Parameters | Returns |
+|---|---|---|
+| `declaration_forms` | none | the forms Storno can build (type, title, description) |
+| `declaration_form_spec` | `type`, `xsd?` | input schema with hints and codes, XML mapping (every XSD attribute with type/constraints), ANAF rules (DUK + web-form BR-C168-…), filing steps, complete example; `xsd: true` returns the ANAF XSD |
+| `declaration_build` | `type`, `input`, `validate?`, `online?` | `valid`, `xml`, `issues[{level, code, field, message}]`, `validation.duk` (ANAF DUKIntegrator), `validation.anafOnline` (ANAF's online validator behind the web form) |
+| `declaration_pdf` | `type`, `xml`, `attachmentPaths?`, `attachments?`, `outFile?` | the DUK PDF with the XML and the attachment zip embedded; written to `outFile` or returned base64 |
+
+```json
+{ "type": "C168", "input": {
+  "an": 2026,
+  "declarant": { "nume": "POPESCU", "prenume": "ION", "calitate": "Locator" },
+  "locator": { "tip": 1, "denumire": "POPESCU ION", "cif": "<CNP>", "adresa": { "judet": "40", "localitate": "6", "localitateNume": "6 Sector - Mun. Bucuresti", "strada": "412", "stradaNume": "Bld. Iuliu Maniu", "numar": "7", "detalii": "bl. 1, ap. 16", "codPostal": "061072" } },
+  "contracte": [{ "actiune": "inregistrare", "numar": "1", "data": "2026-09-01", "deLa": "2026-09-01", "panaLa": "2027-08-31",
+    "bun": { "tip": "imobil", "adresa": { "…same shape…": "" } }, "chirie": { "suma": 450, "moneda": "EUR" },
+    "locatari": [{ "denumire": "IONESCU MARIA", "cif": "<CNP>", "adresa": { "…": "" } }] }] } }
+```
+
+Rules the builder applies before ANAF sees the file (all are also in the spec): required fields and date formats; Romanian addresses need county, locality and street **codes** from `anaf_nomenclator_*`; the rented property needs a postal code (BR-C168-0041); `cotaVenit` must equal the sum of the co-owners' shares (BR-C168-00991); a tenant with a Romanian address needs a CNP (BR-C168-005911, warning: the portal upload accepts a termination without it); CNP control digits are checked; the fiscal office is written only for a NIF; fraction and share of the good exclude each other. Never invent CNPs or CUIs: ANAF rejects them and a false identifier is a false declaration.
+
+Flow: `declaration_form_spec` → `declaration_build` (loop until `valid`) → `declaration_pdf` with the contract scan (or `document_generate` for the sworn statement on termination) → `agent_submit_declaration_pdf` (certificate) or manual SPV upload → `anaf_declaration_status`.
+
 ### `anaf_declaration_status`
 
 Status of a portal filing from ANAF's public StareD112: `index` + `cui`/CNP → `state` (ok, nok, processing, unknown), ANAF wording, recipisa URL.
