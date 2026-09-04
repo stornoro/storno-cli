@@ -273,7 +273,16 @@ export function startHttpServer(port: number, host: string): void {
   const server = createServer(async (req, res) => {
     setCorsHeaders(res);
 
-    const url = new URL(req.url || '/', `http://${req.headers.host}`);
+    // Scanner requests such as "//.env" are not valid relative URLs; answer 400
+    // instead of letting the exception kill the process (and every MCP session).
+    let url: URL;
+    try {
+      url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid request URL' }));
+      return;
+    }
 
     // OAuth2 well-known metadata endpoints (SaaS mode)
     if (url.pathname === '/.well-known/oauth-protected-resource' || url.pathname === '/.well-known/oauth-authorization-server') {
@@ -323,7 +332,7 @@ export function startHttpServer(port: number, host: string): void {
     if (url.pathname === '/api/status' && req.method === 'GET') {
       const status = {
         server: 'storno-mcp',
-        version: '1.0.20',
+        version: '1.0.22',
         activeSessions: sessions.size,
         uptime: process.uptime(),
       };
