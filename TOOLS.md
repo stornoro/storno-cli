@@ -3259,6 +3259,16 @@ Get the Storno API version information including release date, minimum requireme
 
 Endpoints that work without an account or token. Nothing is stored server-side; requests are rate limited per IP (30/hour in production).
 
+### `anaf_nomenclator_judete` / `anaf_nomenclator_localitati` / `anaf_nomenclator_strazi`
+
+ANAF address nomenclators (county, locality, street codes and fiscal offices) required by declaration XSDs, served from Storno's local mirror. Public, no account, 600 requests/minute per IP.
+
+| Tool | Parameters | Returns |
+|---|---|---|
+| `anaf_nomenclator_judete` | none | counties with `code`, `name`, fiscal offices |
+| `anaf_nomenclator_localitati` | `judet`, optional `q` | localities with `code`, `name`, `siruta`, `codPrimarie` |
+| `anaf_nomenclator_strazi` | `judet`, `localitate`, optional `q`, `limit` | streets with `code`, `name` (word-prefix, diacritics-insensitive search) |
+
 ### `declaration_validate_xml`
 
 Validate any ANAF declaration XML (D212, C168, D177, D700, D100, D112, D300, D390, D394 …) with ANAF's own DUKIntegrator validators. Public: no account, nothing stored, 60 requests/hour per IP.

@@ -23,6 +23,24 @@ const lineSchema = z.object({
 
 export const tools = [
   {
+    name: 'anaf_nomenclator_judete',
+    description: "ANAF county nomenclator (cod judet as used in declaration XSDs: 40 = Municipiul Bucuresti, 13 = Constanta …) with the fiscal offices (organe fiscale, ufisc codes) of each county. Public, served from Storno's local mirror of ANAF's nomenclators, no account needed.",
+    inputSchema: z.object({}),
+    handler: async (): Promise<string> => formatResponse(await apiRequest('/api/v1/public/anaf/nomenclator/judete', { noAuth: true })),
+  },
+  {
+    name: 'anaf_nomenclator_localitati',
+    description: "ANAF locality nomenclator for a county: cod_localit (as required by declaration XSDs, e.g. C168 cod_localit_L), SIRUTA and town-hall codes. Optional q filters by name, diacritics-insensitive (\"sector 6\", \"cluj\"). Public, local mirror.",
+    inputSchema: z.object({ judet: z.string().describe('County code, e.g. 40 for Bucuresti'), q: z.string().optional().describe('Name filter') }),
+    handler: async (params: Record<string, unknown>): Promise<string> => formatResponse(await apiRequest(`/api/v1/public/anaf/nomenclator/localitati/${encodeURIComponent(String(params.judet))}`, { query: { q: params.q as string | undefined }, noAuth: true })),
+  },
+  {
+    name: 'anaf_nomenclator_strazi',
+    description: "ANAF street nomenclator for a locality: cod_strada + name (e.g. C168 cod_strada_C). q filters by word prefix, diacritics-insensitive (\"maniu\" finds \"Bld. Iuliu Maniu\"). Streets are cached locally on first use per locality. Public.",
+    inputSchema: z.object({ judet: z.string().describe('County code, e.g. 40'), localitate: z.string().describe('Locality code from anaf_nomenclator_localitati, e.g. 6 for Sector 6'), q: z.string().optional().describe('Street name filter'), limit: z.number().int().min(1).max(200).optional() }),
+    handler: async (params: Record<string, unknown>): Promise<string> => formatResponse(await apiRequest(`/api/v1/public/anaf/nomenclator/strazi/${encodeURIComponent(String(params.judet))}/${encodeURIComponent(String(params.localitate))}`, { query: { q: params.q as string | undefined, limit: params.limit as number | undefined }, noAuth: true })),
+  },
+  {
     name: 'declaration_validate_xml',
     description:
       "Validate an ANAF tax declaration XML (D212 Declaratia unica, C168 rent contract registration, D177, D700, D100, D112, D300, D390, D394 …) with ANAF's own DUKIntegrator validators, the same jars the ANAF portal uses. Public endpoint: no account needed, nothing is stored, 60 requests/hour per IP. Returns ANAF's errors and warnings verbatim. When the root namespace is missing or belongs to another reporting period, Storno applies the namespace ANAF asks for and returns the corrected XML (namespaceCorrected=true): upload that one. Use it before filing in SPV, or in a build → validate → fix loop when assembling a declaration from a taxpayer's documents.",
