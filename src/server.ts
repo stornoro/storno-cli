@@ -62,6 +62,7 @@ import { tools as ncCodesTools } from './tools/nc-codes.js';
 import { tools as telemetryTools } from './tools/telemetry.js';
 import { tools as declarationsTools } from './tools/declarations.js';
 import { tools as spvTools } from './tools/spv.js';
+import { tools as agentTools } from './tools/agent.js';
 
 interface ToolDef {
   name: string;
@@ -120,6 +121,7 @@ const allTools: ToolDef[] = [
   ...telemetryTools,
   ...declarationsTools,
   ...spvTools,
+  ...agentTools,
 ];
 
 /** Create a new McpServer with all Storno tools registered. */

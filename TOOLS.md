@@ -3269,6 +3269,21 @@ ANAF address nomenclators (county, locality, street codes and fiscal offices) re
 | `anaf_nomenclator_localitati` | `judet`, optional `q` | localities with `code`, `name`, `siruta`, `codPrimarie` |
 | `anaf_nomenclator_strazi` | `judet`, `localitate`, optional `q`, `limit` | streets with `code`, `name` (word-prefix, diacritics-insensitive search) |
 
+### `agent_status` / `agent_certificates` / `agent_sign_pdf` / `agent_submit_declaration_pdf`
+
+Local Storno Agent tools (the agent runs on the user's computer with the qualified certificate; these work with the stdio MCP server on the same machine). PIN via `pin` or the `STORNO_AGENT_PIN` environment variable; nothing is signed or sent without it.
+
+| Tool | Parameters | What it does |
+|---|---|---|
+| `agent_status` | none | agent version, update availability |
+| `agent_certificates` | none | certificates the agent can use (id, subject, issuer, expiry) |
+| `agent_sign_pdf` | `files[]` (paths or directories), `certificateId`, `pin?`, `outDir?` | signs every PDF with the certificate (PAdES), writes `<name>.signed.pdf`; stops at the first PIN error |
+| `agent_submit_declaration_pdf` | `file`, `certificateId`, `pin?`, `fileName?` | signs a DUKIntegrator PDF and uploads it to the e-guvernare declarations portal; returns ANAF's upload index |
+
+### `anaf_declaration_status`
+
+Status of a portal filing from ANAF's public StareD112: `index` + `cui`/CNP → `state` (ok, nok, processing, unknown), ANAF wording, recipisa URL.
+
 ### `declaration_validate_xml`
 
 Validate any ANAF declaration XML (D212, C168, D177, D700, D100, D112, D300, D390, D394 …) with ANAF's own DUKIntegrator validators. Public: no account, nothing stored, 60 requests/hour per IP.

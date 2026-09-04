@@ -41,6 +41,12 @@ export const tools = [
     handler: async (params: Record<string, unknown>): Promise<string> => formatResponse(await apiRequest(`/api/v1/public/anaf/nomenclator/strazi/${encodeURIComponent(String(params.judet))}/${encodeURIComponent(String(params.localitate))}`, { query: { q: params.q as string | undefined, limit: params.limit as number | undefined }, noAuth: true })),
   },
   {
+    name: 'anaf_declaration_status',
+    description: "Processing status of a declaration filed on the ANAF e-guvernare portal (after agent_submit_declaration_pdf or any upload that returned an index): ANAF's public StareD112 by upload index and the taxpayer's CUI/CNP. States: ok (accepted), nok (validation errors, see recipisa), processing, unknown (not indexed yet). Returns the recipisa PDF URL when available. Public, no account.",
+    inputSchema: z.object({ index: z.string().describe('Upload index returned by the portal'), cui: z.string().describe('CUI or CNP the declaration was filed for') }),
+    handler: async (params: Record<string, unknown>): Promise<string> => formatResponse(await apiRequest(`/api/v1/public/declarations/status/${encodeURIComponent(String(params.index))}/${encodeURIComponent(String(params.cui))}`, { noAuth: true })),
+  },
+  {
     name: 'declaration_validate_xml',
     description:
       "Validate an ANAF tax declaration XML (D212 Declaratia unica, C168 rent contract registration, D177, D700, D100, D112, D300, D390, D394 …) with ANAF's own DUKIntegrator validators, the same jars the ANAF portal uses. Public endpoint: no account needed, nothing is stored, 60 requests/hour per IP. Returns ANAF's errors and warnings verbatim. When the root namespace is missing or belongs to another reporting period, Storno applies the namespace ANAF asks for and returns the corrected XML (namespaceCorrected=true): upload that one. Use it before filing in SPV, or in a build → validate → fix loop when assembling a declaration from a taxpayer's documents.",
