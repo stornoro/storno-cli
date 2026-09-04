@@ -3259,6 +3259,17 @@ Get the Storno API version information including release date, minimum requireme
 
 Endpoints that work without an account or token. Nothing is stored server-side; requests are rate limited per IP (30/hour in production).
 
+### `declaration_validate_xml`
+
+Validate any ANAF declaration XML (D212, C168, D177, D700, D100, D112, D300, D390, D394 …) with ANAF's own DUKIntegrator validators. Public: no account, nothing stored, 60 requests/hour per IP.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `xml` | string | yes | The declaration document (max 4 MB) |
+| `type` | string | no | Form code such as `D212`; inferred from the root element when omitted |
+
+Returns `valid`, ANAF's `errors` and `warnings` verbatim, the `namespace` used and, when Storno had to apply the namespace ANAF asked for, `namespaceCorrected: true` with the corrected `xml` to upload.
+
 ### `storno_xml_generate`
 
 Generate an e-Factura (UBL 2.1, CIUS-RO) XML for a storno / credit invoice. Returns the XML, the XSD + Schematron validation report (`valid`, `errors`, `warnings`, `schematronChecked`), computed `totals` and a suggested `filename`. The output is an Invoice (type 380) with negated quantities and a `BillingReference` to the original document, the same shape Storno issues for stornos. RON only, max 50 lines.

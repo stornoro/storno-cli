@@ -23,6 +23,23 @@ const lineSchema = z.object({
 
 export const tools = [
   {
+    name: 'declaration_validate_xml',
+    description:
+      "Validate an ANAF tax declaration XML (D212 Declaratia unica, C168 rent contract registration, D177, D700, D100, D112, D300, D390, D394 …) with ANAF's own DUKIntegrator validators, the same jars the ANAF portal uses. Public endpoint: no account needed, nothing is stored, 60 requests/hour per IP. Returns ANAF's errors and warnings verbatim. When the root namespace is missing or belongs to another reporting period, Storno applies the namespace ANAF asks for and returns the corrected XML (namespaceCorrected=true): upload that one. Use it before filing in SPV, or in a build → validate → fix loop when assembling a declaration from a taxpayer's documents.",
+    inputSchema: z.object({
+      xml: z.string().describe('The declaration XML document (max 4 MB)'),
+      type: z.string().optional().describe('Form code, e.g. D212, C168, D300. Inferred from the root element when omitted.'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      const result = await apiRequest('/api/v1/public/declarations/validate', {
+        method: 'POST',
+        body: params,
+        noAuth: true,
+      });
+      return formatResponse(result);
+    },
+  },
+  {
     name: 'storno_xml_generate',
     description:
       'Generate an e-Factura (UBL 2.1, CIUS-RO) XML for a storno / credit invoice without an account. Public endpoint: nothing is stored, no authentication needed, rate limited per IP. Returns the XML, the XSD + Schematron validation report, and totals. The result is an Invoice (type 380) with negated quantities and a BillingReference to the original document, exactly what Storno issues for stornos. RON only. Use it to correct an invoice already accepted in SPV, or to test XML output before integrating.',
