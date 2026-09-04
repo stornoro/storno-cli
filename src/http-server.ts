@@ -322,7 +322,7 @@ export function startHttpServer(port: number, host: string): void {
     if (url.pathname === '/api/status' && req.method === 'GET') {
       const status = {
         server: 'storno-mcp',
-        version: '1.0.9',
+        version: '1.0.20',
         activeSessions: sessions.size,
         uptime: process.uptime(),
       };
