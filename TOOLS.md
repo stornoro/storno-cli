@@ -41,6 +41,7 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [PDF Template Config](#pdf-template-config)
 - [Company Registry](#company-registry)
 - [System](#system)
+- [Public Tools](#public-tools)
 - [Accounting Export](#accounting-export)
 - [Backup](#backup)
 - [Borderou (Bank Reconciliation)](#borderou-bank-reconciliation)
@@ -3250,6 +3251,26 @@ Check the Storno API system health status. Returns database, queue, storage, and
 Get the Storno API version information including release date, minimum requirements, and changelog URL.
 
 *No parameters required.*
+
+---
+
+## Public Tools
+
+Endpoints that work without an account or token. Nothing is stored server-side; requests are rate limited per IP (30/hour in production).
+
+### `storno_xml_generate`
+
+Generate an e-Factura (UBL 2.1, CIUS-RO) XML for a storno / credit invoice. Returns the XML, the XSD + Schematron validation report (`valid`, `errors`, `warnings`, `schematronChecked`), computed `totals` and a suggested `filename`. The output is an Invoice (type 380) with negated quantities and a `BillingReference` to the original document, the same shape Storno issues for stornos. RON only, max 50 lines.
+
+**Parameters:**
+- `seller` (object, required): `name`, `cif`, `address`, `city`, `county`, optional `country` (default RO), `registrationNumber`, `vatPayer` (default true), `email`, `phone`, `bankAccount`, `bankName`
+- `buyer` (object, required): `name`, `address`, `city`, `county`, optional `country`, `type` (`company` | `individual`, default company), `cui` (company) or `cnp` (individual), `registrationNumber`, `vatPayer`
+- `original` (object, required): `number`, `issueDate` (YYYY-MM-DD) of the invoice being cancelled
+- `storno` (object, optional): `number` (default `STORNO-<date>`), `issueDate` (default today), `notes`
+- `currency` (string, optional): only `RON`
+- `lines` (array, required, 1-50): `description`, `quantity` (positive, negated by the generator), `unitPrice`, optional `vatRate` (0/5/9/11/19/21), `unitOfMeasure` (buc, kg, l, m, ora, zi, luna, set, pachet), `vatIncluded`, `vatCategoryCode` (S, Z, E, AE, O, K, G)
+
+Validation failures return `code: VALIDATION_FAILED` with a `fieldErrors` map keyed by dotted path (e.g. `seller.cif`, `lines.0.quantity`).
 
 ---
 

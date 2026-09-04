@@ -49,6 +49,7 @@ import { tools as pdfTemplateConfigTools } from './tools/pdf-template-config.js'
 import { tools as receiptsTools } from './tools/receipts.js';
 import { tools as companyRegistryTools } from './tools/company-registry.js';
 import { tools as systemTools } from './tools/system.js';
+import { tools as publicTools } from './tools/public-tools.js';
 import { tools as accountingExportTools } from './tools/accounting-export.js';
 import { tools as backupTools } from './tools/backup.js';
 import { tools as borderouTools } from './tools/borderou.js';
@@ -105,6 +106,7 @@ const allTools: ToolDef[] = [
   ...receiptsTools,
   ...companyRegistryTools,
   ...systemTools,
+  ...publicTools,
   ...accountingExportTools,
   ...backupTools,
   ...borderouTools,
