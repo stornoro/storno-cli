@@ -3269,6 +3269,23 @@ ANAF address nomenclators (county, locality, street codes and fiscal offices) re
 | `anaf_nomenclator_localitati` | `judet`, optional `q` | localities with `code`, `name`, `siruta`, `codPrimarie` |
 | `anaf_nomenclator_strazi` | `judet`, `localitate`, optional `q`, `limit` | streets with `code`, `name` (word-prefix, diacritics-insensitive search) |
 
+### `dosare_list` / `dosare_actions` / `dosare_stats` / `dosare_get` / `dosare_create` / `dosare_update` / `dosare_delete` / `dosare_attach` / `dosare_annual_return` / `dosare_d212_prefill` / `dosare_d212_create` / `dosare_document`
+
+Dosare (case files) group what a person deals with ANAF about: a rental contract (tenant, rent, period, the 30-day C168 deadline), one year's Declarația unică (25 May deadline), the periodic returns, the company's fiscal standing. Each holds the declarations filed for it, the SPV requests, the ANAF messages the inbox sync links to them (recipisa by upload index, answer by id_solicitare), the next step and the deadline. Reading needs `declaration.view`, writing `declaration.submit`.
+
+| Tool | What it does |
+|---|---|
+| `dosare_actions` | "What do I have to do?": rejected filings with the reason, requests in error, deadlines within 14 days, contracts expiring within 60 days, unread somații; what ANAF is still processing; answers of the last 14 days |
+| `dosare_stats` | rental portfolio: properties, active and expiring contracts, monthly rent by currency, expected rent per income year from the contracts versus what the D212s declared |
+| `dosare_list` / `dosare_get` | dosare with counts; one dosar with children and timeline |
+| `dosare_create` / `dosare_update` / `dosare_delete` | manage dosare; a rental contract gets its title and C168 deadline from the subject |
+| `dosare_attach` | link or unlink a declaration, request or message |
+| `dosare_annual_return` | the `Declarația unică <an>` dosar with the 25 May deadline (reminders 30/7/1 days before) |
+| `dosare_d212_prefill` / `dosare_d212_create` | D212 rent input built from the contracts (RON rents multiplied by months; other currencies flagged for BNR conversion), then the draft in the dosar → `declarations_validate` → `declarations_prepare` + agent |
+| `dosare_document` | termination agreement or the landlord's sworn statement prefilled from the dosar, reviewed, then PDF (sign with `agent_sign_pdf` or by hand) |
+
+Typical conversation: "what do I owe ANAF?" → `dosare_actions`; "register my new rental" → `dosare_create` (subject with tenant CNP) → `declaration_build` C168 → `declaration_pdf` with the contract scan → `agent_submit_declaration_pdf`; in May: `dosare_annual_return` → `dosare_d212_prefill` → review → `dosare_d212_create` → validate → file. Rule learned from real filings: one C168 per landlord and period in processing at a time.
+
 ### `agent_status` / `agent_certificates` / `agent_sign_pdf` / `agent_submit_declaration_pdf`
 
 Local Storno Agent tools (the agent runs on the user's computer with the qualified certificate; these work with the stdio MCP server on the same machine). PIN via `pin` or the `STORNO_AGENT_PIN` environment variable; nothing is signed or sent without it.

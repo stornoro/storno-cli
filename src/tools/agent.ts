@@ -19,7 +19,7 @@ const AGENT_BASE = process.env.STORNO_AGENT_URL || 'https://agent.storno.ro:1739
 const PORTAL_SESSION_URL = 'https://decl.anaf.mfinante.gov.ro/WAS6DUS/';
 const PORTAL_UPLOAD_URL = 'https://decl.anaf.mfinante.gov.ro/WAS6DUS/displayFile.do';
 
-async function agent(path: string, body?: unknown, timeoutMs = 300_000): Promise<any> {
+export async function agent(path: string, body?: unknown, timeoutMs = 300_000): Promise<any> {
   // The agent's TLS certificate is issued for agent.storno.ro and is trusted by browsers;
   // Node may not have the intermediate, so allow it explicitly for the loopback agent only.
   const res = await fetch(`${AGENT_BASE}${path}`, {
@@ -36,7 +36,7 @@ async function agent(path: string, body?: unknown, timeoutMs = 300_000): Promise
   }
 }
 
-function pinFrom(params: Record<string, unknown>): string | undefined {
+export function pinFrom(params: Record<string, unknown>): string | undefined {
   const pin = (params.pin as string | undefined) || process.env.STORNO_AGENT_PIN;
   return pin && pin.trim() !== '' ? pin : undefined;
 }

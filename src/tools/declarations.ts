@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { agent, pinFrom } from './agent.js';
 import { apiRequest } from '../client.js';
 import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/errors.js';
 import { getConfig } from '../config.js';
@@ -87,11 +88,13 @@ export const tools = [
   {
     name: 'declarations_create',
     description:
-      'Create a new tax declaration and auto-populate it from existing invoice data. Supported types: d394, d300, d390, d100, d112. The system automatically aggregates invoice data by partner CIF and VAT rate for the specified period.',
+      "Create a new tax declaration. VAT and payroll types (d394, d300, d390, d100, d112) are auto-populated from the company's invoices for the period. Form-based types are filled from plain JSON: 'd212' (Declarația unică, rent income; month 12) and 'c168' (rental contract registration/amendment/termination; month 12) take `data.input` in the shape of declaration_form_spec, and c168 needs `data.attachments` [{name, contentBase64}] (the scanned contract / termination document) for the PDF. Then declarations_validate → declarations_file_via_agent.",
     inputSchema: z.object({
       type: z
-        .enum(['d394', 'd300', 'd390', 'd100', 'd112'])
+        .enum(['d394', 'd300', 'd390', 'd100', 'd112', 'd212', 'c168'])
         .describe('Declaration type'),
+      data: z.record(z.string(), z.unknown()).optional().describe('For d212 / c168: { input: <form input>, attachments?: [{name, contentBase64}] }'),
+      dosarId: z.string().uuid().optional().describe('Attach the new declaration to this dosar'),
       year: z
         .number()
         .int()
@@ -131,6 +134,17 @@ export const tools = [
         method: 'POST',
         body,
       });
+      if (res.ok && (params.data || params.dosarId)) {
+        const created = res.data as { id: string };
+        if (params.data) {
+          const upd = await apiRequest(`/api/v1/declarations/${created.id}`, { method: 'PATCH', body: { data: params.data }, companyId: effectiveCompanyId });
+          if (!upd.ok) return formatResponse(upd);
+          res.data = upd.data;
+        }
+        if (params.dosarId) {
+          await apiRequest(`/api/v1/dosare/${params.dosarId as string}/attach`, { method: 'POST', body: { declarationId: created.id }, companyId: effectiveCompanyId });
+        }
+      }
       return formatResponse(res);
     },
   },
@@ -311,6 +325,69 @@ export const tools = [
         companyId: effectiveCompanyId,
       });
       return formatResponse(res);
+    },
+  },
+  {
+    name: 'declarations_update',
+    description: 'Update a draft declaration: `data` (for d212 / c168 the form input under data.input and attachments under data.attachments) and/or `metadata`. Only drafts can be edited.',
+    inputSchema: z.object({
+      id: z.string().describe('Declaration UUID'),
+      data: z.record(z.string(), z.unknown()).optional(),
+      metadata: z.record(z.string(), z.unknown()).optional(),
+      companyId: z.string().optional().describe('Company UUID (overrides STORNO_COMPANY_ID env var)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const { id, companyId, ...body } = params as Record<string, unknown> & { id: string; companyId?: string };
+      const effectiveCompanyId = companyId || getConfig().companyId;
+      if (!effectiveCompanyId) return noCompanySelected();
+      return formatResponse(await apiRequest(`/api/v1/declarations/${id}`, { method: 'PATCH', body, companyId: effectiveCompanyId }));
+    },
+  },
+  {
+    name: 'declarations_file_via_agent',
+    description:
+      "File a declaration at ANAF in one call, the way the web app does: Storno prepares the XML and the DUK PDF (with the attachment zip for c168), the local Storno Agent signs it with the qualified certificate and uploads it to the e-guvernare portal, and Storno records ANAF's upload index (status processing; the recipisa arrives in the SPV inbox and in the dosar). Needs the agent on this computer and the PIN (pin or STORNO_AGENT_PIN). Check declarations_validate first. Remember: one C168 per landlord and period in processing at a time.",
+    inputSchema: z.object({
+      id: z.string().describe('Declaration UUID'),
+      certificateId: z.string().describe('Certificate id from agent_certificates'),
+      pin: z.string().optional().describe('Token PIN; defaults to STORNO_AGENT_PIN'),
+      companyId: z.string().optional().describe('Company UUID (overrides STORNO_COMPANY_ID env var)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const pin = pinFrom(params);
+      if (!pin) return formatResponse({ ok: false, status: 400, error: 'PIN required: pass pin or set STORNO_AGENT_PIN. Nothing is signed or sent without it.' });
+      const { id, certificateId, companyId } = params as { id: string; certificateId: string; companyId?: string };
+      const effectiveCompanyId = companyId || getConfig().companyId;
+      if (!effectiveCompanyId) return noCompanySelected();
+
+      const prep = await apiRequest(`/api/v1/declarations/${id}/prepare`, { companyId: effectiveCompanyId, query: { operation: 'submit' } });
+      if (!prep.ok) return formatResponse(prep);
+      const p = prep.data as { pdfBase64: string; anafUrl: string; uploadMode?: string; uploadField?: string; fileName?: string; sessionUrl?: string };
+      let agentRes: any;
+      try {
+        agentRes = await agent('/sign-and-submit', {
+          pdf: p.pdfBase64,
+          certificateId,
+          pin,
+          uploadUrl: p.anafUrl,
+          uploadHeaders: {},
+          uploadMode: p.uploadMode ?? 'multipart',
+          uploadField: p.uploadField ?? 'linkdoc',
+          fileName: p.fileName ?? `${id}.pdf`,
+          sessionUrl: p.sessionUrl,
+        }, 400_000);
+      } catch (e) {
+        return formatResponse({ ok: false, status: 502, error: `Storno Agent not reachable: ${(e as Error).message}`, details: { hint: 'Start the Storno Agent on this computer (https://get.storno.ro/agent) and plug in the token.' } });
+      }
+      if (agentRes.error) return formatResponse({ ok: false, status: 502, error: String(agentRes.error), details: agentRes.details });
+      const result = await apiRequest(`/api/v1/declarations/${id}/agent-result`, {
+        method: 'POST',
+        body: { statusCode: agentRes.statusCode, headers: agentRes.headers ?? {}, body: agentRes.body ?? '' },
+        companyId: effectiveCompanyId,
+      });
+      return formatResponse(result);
     },
   },
   {
