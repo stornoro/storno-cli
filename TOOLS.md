@@ -3290,7 +3290,7 @@ Typical conversation: "what do I owe ANAF?" → `dosare_actions`; "register my n
 
 ### `agent_status` / `agent_certificates` / `agent_sign_pdf` / `agent_submit_declaration_pdf`
 
-Local Storno Agent tools (the agent runs on the user's computer with the qualified certificate; these work with the stdio MCP server on the same machine). PIN via `pin` or the `STORNO_AGENT_PIN` environment variable; nothing is signed or sent without it.
+Local Storno Agent tools (the agent runs on the user's computer with the qualified certificate; these work with the stdio MCP server on the same machine). PIN via `pin`, the `STORNO_AGENT_PIN` environment variable, or the PIN remembered on the computer by the agent (web app → Company → ANAF → Agent → Save preference, agent ≥ 1.7.8, kept in the OS secure store); nothing is signed or sent without one of them.
 
 | Tool | Parameters | What it does |
 |---|---|---|

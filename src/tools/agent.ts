@@ -12,8 +12,10 @@ const fail = (error: string, details?: unknown) => formatResponse({ ok: false, s
  * uploads on their machine. They only work when the MCP server runs on the same
  * computer as the agent (Claude Desktop / Claude Code with the stdio transport).
  *
- * PIN: pass `pin`, or set STORNO_AGENT_PIN in the MCP server environment. Nothing
- * is sent to ANAF without it.
+ * PIN: pass `pin`, set STORNO_AGENT_PIN in the MCP server environment, or remember
+ * it once on the computer (Storno web app → Company → ANAF → Agent → Save
+ * preference; agent ≥ 1.7.8 keeps it in the OS secure store and fills it in).
+ * Nothing is sent to ANAF without one of these.
  */
 const AGENT_BASE = process.env.STORNO_AGENT_URL || 'https://agent.storno.ro:17394';
 const PORTAL_SESSION_URL = 'https://decl.anaf.mfinante.gov.ro/WAS6DUS/';
@@ -40,6 +42,18 @@ export function pinFrom(params: Record<string, unknown>): string | undefined {
   const pin = (params.pin as string | undefined) || process.env.STORNO_AGENT_PIN;
   return pin && pin.trim() !== '' ? pin : undefined;
 }
+
+/** Does the local agent remember this certificate's PIN in the OS secure store (agent ≥ 1.7.8)? */
+export async function agentRemembersPin(certificateId: string): Promise<boolean> {
+  try {
+    const res = await agent(`/pin/${encodeURIComponent(certificateId)}`, undefined, 5_000);
+    return res?.stored === true;
+  } catch {
+    return false;
+  }
+}
+
+export const PIN_MISSING = 'PIN required: pass pin, set STORNO_AGENT_PIN, or remember the PIN once in the Storno web app (Company → ANAF → Agent → Save preference). Nothing is signed or sent without it.';
 
 function pdfFiles(inputs: string[]): string[] {
   const out: string[] = [];
@@ -84,18 +98,18 @@ export const tools = [
   {
     name: 'agent_sign_pdf',
     description:
-      'Sign one or many PDF files with the qualified certificate through the local Storno Agent (PAdES/CMS signature embedded in the PDF), e.g. declarations produced by DUKIntegrator, contracts, any document ANAF or a partner wants signed. Pass file paths and/or directories (all *.pdf inside); each signed copy is written next to the original as <name>.signed.pdf (or into outDir). Requires the certificate PIN (pin or STORNO_AGENT_PIN); the batch stops at the first PIN error to protect the token.',
+      'Sign one or many PDF files with the qualified certificate through the local Storno Agent (PAdES/CMS signature embedded in the PDF), e.g. declarations produced by DUKIntegrator, contracts, any document ANAF or a partner wants signed. Pass file paths and/or directories (all *.pdf inside); each signed copy is written next to the original as <name>.signed.pdf (or into outDir). Requires the certificate PIN (pin, STORNO_AGENT_PIN, or the PIN remembered on this computer by the agent); the batch stops at the first PIN error to protect the token.',
     inputSchema: z.object({
       files: z.array(z.string()).min(1).describe('PDF paths and/or directories'),
       certificateId: z.string().describe('Certificate id from agent_certificates'),
-      pin: z.string().optional().describe('Token PIN; defaults to STORNO_AGENT_PIN'),
+      pin: z.string().optional().describe('Token PIN; defaults to STORNO_AGENT_PIN, or to the PIN the agent remembers for this certificate'),
       outDir: z.string().optional().describe('Directory for the signed copies (default: next to each file)'),
       visible: z.boolean().optional().describe('Draw a visible signature box in the footer of the last page ("Semnat digital de …", date, issuer). Default: invisible signature (still verifiable in Adobe Reader / ANAF)'),
       signerName: z.string().optional().describe('Name shown in the visible box (default: the certificate subject)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const pin = pinFrom(params);
-      if (!pin) return fail('PIN required: pass pin or set STORNO_AGENT_PIN. Nothing is signed without it.');
+      if (!pin && !(await agentRemembersPin(params.certificateId as string))) return fail(PIN_MISSING);
       const files = pdfFiles(params.files as string[]);
       if (files.length === 0) return fail('No PDF files found');
       const items = files.map((f) => ({ name: basename(f), pdf: readFileSync(f).toString('base64') }));
@@ -113,7 +127,7 @@ export const tools = [
   {
     name: 'agent_submit_declaration_pdf',
     description:
-      "File a declaration PDF (made by DUKIntegrator, XML embedded, e.g. from Storno's declarations or a C168/D212 built with the public tools) at ANAF: the local agent signs it with the certificate and uploads it to the e-guvernare declarations portal (WAS6DUS), then returns ANAF's upload index. Track it with anaf_declaration_status (index + CUI/CNP); the recipisa arrives in the SPV inbox and on StareD112. Requires the PIN.",
+      "File a declaration PDF (made by DUKIntegrator, XML embedded, e.g. from Storno's declarations or a C168/D212 built with the public tools) at ANAF: the local agent signs it with the certificate and uploads it to the e-guvernare declarations portal (WAS6DUS), then returns ANAF's upload index. Track it with anaf_declaration_status (index + CUI/CNP); the recipisa arrives in the SPV inbox and on StareD112. Requires the PIN (pin, STORNO_AGENT_PIN, or the PIN remembered on this computer by the agent).",
     inputSchema: z.object({
       file: z.string().describe('Path to the DUK-generated PDF'),
       certificateId: z.string(),
@@ -122,7 +136,7 @@ export const tools = [
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const pin = pinFrom(params);
-      if (!pin) return fail('PIN required: pass pin or set STORNO_AGENT_PIN.');
+      if (!pin && !(await agentRemembersPin(params.certificateId as string))) return fail(PIN_MISSING);
       const file = resolve(params.file as string);
       const res = await agent('/sign-and-submit', {
         pdf: readFileSync(file).toString('base64'),

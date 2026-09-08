@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { agent, pinFrom } from './agent.js';
+import { agent, pinFrom, agentRemembersPin, PIN_MISSING } from './agent.js';
 import { apiRequest } from '../client.js';
 import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/errors.js';
 import { getConfig } from '../config.js';
@@ -347,18 +347,18 @@ export const tools = [
   {
     name: 'declarations_file_via_agent',
     description:
-      "File a declaration at ANAF in one call, the way the web app does: Storno prepares the XML and the DUK PDF (with the attachment zip for c168), the local Storno Agent signs it with the qualified certificate and uploads it to the e-guvernare portal, and Storno records ANAF's upload index (status processing; the recipisa arrives in the SPV inbox and in the dosar). Needs the agent on this computer and the PIN (pin or STORNO_AGENT_PIN). Check declarations_validate first. Remember: one C168 per landlord and period in processing at a time.",
+      "File a declaration at ANAF in one call, the way the web app does: Storno prepares the XML and the DUK PDF (with the attachment zip for c168), the local Storno Agent signs it with the qualified certificate and uploads it to the e-guvernare portal, and Storno records ANAF's upload index (status processing; the recipisa arrives in the SPV inbox and in the dosar). Needs the agent on this computer and the PIN (pin, STORNO_AGENT_PIN, or the PIN remembered on this computer by the agent). Check declarations_validate first. Remember: one C168 per landlord and period in processing at a time.",
     inputSchema: z.object({
       id: z.string().describe('Declaration UUID'),
       certificateId: z.string().describe('Certificate id from agent_certificates'),
-      pin: z.string().optional().describe('Token PIN; defaults to STORNO_AGENT_PIN'),
+      pin: z.string().optional().describe('Token PIN; defaults to STORNO_AGENT_PIN, or to the PIN the agent remembers for this certificate'),
       companyId: z.string().optional().describe('Company UUID (overrides STORNO_COMPANY_ID env var)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
       const pin = pinFrom(params);
-      if (!pin) return formatResponse({ ok: false, status: 400, error: 'PIN required: pass pin or set STORNO_AGENT_PIN. Nothing is signed or sent without it.' });
       const { id, certificateId, companyId } = params as { id: string; certificateId: string; companyId?: string };
+      if (!pin && !(await agentRemembersPin(certificateId))) return formatResponse({ ok: false, status: 400, error: PIN_MISSING });
       const effectiveCompanyId = companyId || getConfig().companyId;
       if (!effectiveCompanyId) return noCompanySelected();
 
