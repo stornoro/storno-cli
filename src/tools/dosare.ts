@@ -233,6 +233,16 @@ export const tools = [
     },
   },
   {
+    name: 'dosare_billing',
+    description:
+      "Everything invoiced between the landlord and the tenant of a rental dosar (matched by the tenant's CUI/CNP on clients and suppliers): the recurring invoice, the invoices issued to the tenant with paid / partial / unpaid / overdue state and days overdue, totals per currency, the invoices received from the tenant (e.g. works compensated with the rent) and, when the dosar records an investment clause, the compensation balance. Answers \"did the tenant pay?\" and \"how much rent is outstanding?\".",
+    inputSchema: z.object({ id: z.string().uuid().describe('Rental-contract dosar id'), companyId: companyIdSchema }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      return formatResponse(await apiRequest(`/api/v1/dosare/${params.id as string}/billing`, { companyId: params.companyId as string | undefined }));
+    },
+  },
+  {
     name: 'dosare_document',
     description:
       "Generate a legal document from a rental-contract dosar, prefilled with the landlord (company), tenant, contract and property: 'conventie_incetare_inchiriere' (termination agreement), 'declaratie_incetare_contract' (landlord's sworn statement, the C168 termination attachment), 'act_aditional_inchiriere' (addendum: extension and/or new rent; fields act{numar,data}, prelungire{data_inceput,data_sfarsit}, chirie_noua{suma,valuta,de_la}) or 'notificare_incetare_inchiriere' (termination notice: data_incetare, preaviz_zile, motiv). Without `render` you get the prefilled fields to review with the user; with render:true and the reviewed `fields` (overrides) you get the PDF (written to outFile when given). Sign it by hand or with agent_sign_pdf, then attach it to the C168 termination.",
