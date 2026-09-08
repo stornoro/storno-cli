@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { agent, pinFrom, agentRemembersPin, PIN_MISSING } from './agent.js';
 import { apiRequest } from '../client.js';
 import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/errors.js';
@@ -388,6 +390,27 @@ export const tools = [
         companyId: effectiveCompanyId,
       });
       return formatResponse(result);
+    },
+  },
+  {
+    name: 'declarations_download_pdf',
+    description:
+      "The PDF ANAF accepts for this declaration (DUKIntegrator's form with the XML embedded and, for C168, the attachment zip), generated on demand from the current data. Use it when the user files by hand: they upload this file in SPV (persoane fizice: SPV → Depunere declarații) or on the e-guvernare portal with their own certificate. Written to outFile. Storno's rules and ANAF's validator run first; errors come back instead of a broken file.",
+    inputSchema: z.object({
+      id: z.string().describe('Declaration UUID'),
+      outFile: z.string().describe('Where to write the PDF'),
+      refresh: z.boolean().optional().describe('Regenerate even if a PDF was already produced (drafts only)'),
+      companyId: z.string().optional().describe('Company UUID (overrides STORNO_COMPANY_ID env var)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const effectiveCompanyId = (params.companyId as string | undefined) || getConfig().companyId;
+      if (!effectiveCompanyId) return noCompanySelected();
+      const res = await apiRequest(`/api/v1/declarations/${params.id as string}/pdf`, { companyId: effectiveCompanyId, query: params.refresh ? { refresh: '1' } : {}, binary: true });
+      if (!res.ok) return formatResponse(res);
+      const out = resolve(params.outFile as string);
+      writeFileSync(out, Buffer.isBuffer(res.data) ? res.data : Buffer.from(String(res.data)));
+      return formatResponse({ ok: true, status: 200, data: { file: out, next: 'Upload this PDF in SPV (Depunere declarații) or file it with declarations_file_via_agent; then anaf_declaration_status / the recipisa in the SPV inbox.' } });
     },
   },
   {

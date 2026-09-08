@@ -3287,6 +3287,8 @@ Dosare (case files) group what a person deals with ANAF about: a rental contract
 | `dosare_registry_proposals` / `dosare_registry_import` | the contracts in ANAF's registry extract with their state, matched to existing dosare; create the missing ones in one call |
 | `dosare_c168_prefill` / `dosare_c168_create` | the C168 (registration, amendment, termination) built from the dosar with coded addresses and the tenant CNP, the rule issues to fix, then the declaration in the dosar with the files attached → `declarations_validate` → `declarations_file_via_agent` |
 
+Manual filing without the agent: `declarations_download_pdf` writes the PDF ANAF accepts (XML embedded, zip attached) so the person uploads it in SPV themselves.
+
 Typical conversation: "what do I owe ANAF?" → `dosare_actions`; "register my new rental" → `dosare_create` (subject with tenant CNP) → `declaration_build` C168 → `declaration_pdf` with the contract scan → `agent_submit_declaration_pdf`; in May: `dosare_annual_return` → `dosare_d212_prefill` → review → `dosare_d212_create` → validate → file. Rule learned from real filings: one C168 per landlord and period in processing at a time.
 
 ### `agent_status` / `agent_certificates` / `agent_sign_pdf` / `agent_submit_declaration_pdf`
