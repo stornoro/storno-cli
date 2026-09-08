@@ -31,9 +31,9 @@ export const tools = [
   {
     name: 'borderou_upload',
     description:
-      'Upload a bank statement or borderou file (CSV, XLSX, XLS) for transaction import and reconciliation. Parses the file, creates transactions, and runs automatic matching against existing invoices.',
+      'Upload a bank statement or borderou file (CSV, XLSX, XLS, or the original bank PDF) for transaction import and reconciliation. PDF statements are recognised automatically for Banca Transilvania, BRD, ING, CEC, Raiffeisen, UniCredit, BCR, Revolut, Garanti, Libra, Patria, Intesa Sanpaolo, Citi, Vista, Wise, myPOS, Viva, Nexent and Trezoreria Statului (pick the matching provider or generic_bank). Parses the file, creates transactions, and runs automatic matching against existing invoices.',
     inputSchema: z.object({
-      filePath: z.string().describe('Absolute path to the file to upload (CSV, XLSX, or XLS)'),
+      filePath: z.string().describe('Absolute path to the file to upload (CSV, XLSX, XLS, or PDF)'),
       sourceType: z
         .enum(['borderou', 'bank_statement'])
         .describe('Type of upload: "borderou" for payment lists, "bank_statement" for bank exports'),

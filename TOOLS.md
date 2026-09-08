@@ -3513,13 +3513,13 @@ List available borderou (bank statement) providers and supported file formats.
 
 ### `borderou_upload`
 
-Upload a bank statement or borderou file (CSV, XLSX, XLS) for transaction import and reconciliation.
+Upload a bank statement or borderou file (CSV, XLSX, XLS, or the original bank PDF) for transaction import and reconciliation. PDF statements are recognised automatically for Banca Transilvania, BRD, ING, CEC, Raiffeisen, UniCredit, BCR, Revolut, Garanti, Libra, Patria, Intesa Sanpaolo, Citi, Vista, Wise, myPOS, Viva, Nexent and Trezoreria Statului.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `filePath` | string | Yes | Absolute path to the file (CSV, XLSX, or XLS) |
+| `filePath` | string | Yes | Absolute path to the file (CSV, XLSX, XLS, or PDF) |
 | `sourceType` | string | Yes | "borderou" or "bank_statement" |
 | `provider` | string | Yes | Bank or provider name (from borderou_providers) |
 | `currency` | string | No | Currency code (default: RON) |
