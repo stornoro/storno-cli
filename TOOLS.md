@@ -3282,7 +3282,9 @@ Dosare (case files) group what a person deals with ANAF about: a rental contract
 | `dosare_attach` | link or unlink a declaration, request or message |
 | `dosare_annual_return` | the `Declarația unică <an>` dosar with the 25 May deadline (reminders 30/7/1 days before) |
 | `dosare_d212_prefill` / `dosare_d212_create` | D212 rent input built from the contracts (RON rents multiplied by months; other currencies flagged for BNR conversion), then the draft in the dosar → `declarations_validate` → `declarations_prepare` + agent |
-| `dosare_document` | termination agreement or the landlord's sworn statement prefilled from the dosar, reviewed, then PDF (sign with `agent_sign_pdf` or by hand) |
+| `dosare_document` | termination agreement, sworn statement, addendum or termination notice prefilled from the dosar, reviewed, then PDF (sign with `agent_sign_pdf` or by hand) |
+| `dosare_files_upload` / `dosare_files_download` | the scanned contract, addendum, termination document or signed statement kept in the dosar; they become the C168 attachment |
+| `dosare_c168_prefill` / `dosare_c168_create` | the C168 (registration, amendment, termination) built from the dosar with coded addresses and the tenant CNP, the rule issues to fix, then the declaration in the dosar with the files attached → `declarations_validate` → `declarations_file_via_agent` |
 
 Typical conversation: "what do I owe ANAF?" → `dosare_actions`; "register my new rental" → `dosare_create` (subject with tenant CNP) → `declaration_build` C168 → `declaration_pdf` with the contract scan → `agent_submit_declaration_pdf`; in May: `dosare_annual_return` → `dosare_d212_prefill` → review → `dosare_d212_create` → validate → file. Rule learned from real filings: one C168 per landlord and period in processing at a time.
 

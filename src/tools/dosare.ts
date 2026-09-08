@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { basename, resolve } from 'node:path';
 import { apiRequest } from '../client.js';
 import { formatResponse, notAuthenticated } from '../utils/errors.js';
 import { getConfig } from '../config.js';
@@ -43,9 +43,16 @@ export const tools = [
     name: 'dosare_stats',
     description:
       'Rental portfolio of the company: every property with tenant, rent, period, active/expiring state and linked declarations; active contracts; contracts expiring within 60 days; monthly rent by currency; expected gross rent per income year from the contracts (RON) versus what the D212s declared per year (with the declaration status). Answers "how much rent did I collect and declare last year?".',
-    inputSchema: z.object({ companyId: companyIdSchema }),
+    inputSchema: z.object({ companyId: companyIdSchema, csvOutFile: z.string().optional().describe('Write the portfolio as a CSV file to this path instead of returning JSON') }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
+      if (params.csvOutFile) {
+        const res = await apiRequest('/api/v1/dosare/stats', { query: { format: 'csv' }, companyId: params.companyId as string | undefined, binary: true });
+        if (!res.ok) return formatResponse(res);
+        const out = resolve(params.csvOutFile as string);
+        writeFileSync(out, Buffer.isBuffer(res.data) ? res.data : Buffer.from(String(res.data)));
+        return formatResponse({ ok: true, status: 200, data: { file: out } });
+      }
       return formatResponse(await apiRequest('/api/v1/dosare/stats', { companyId: params.companyId as string | undefined }));
     },
   },
@@ -153,12 +160,63 @@ export const tools = [
     },
   },
   {
-    name: 'dosare_document',
+    name: 'dosare_files_upload',
+    description: 'Put a file into a dosar: the scanned contract (kind contract), an addendum (act_aditional), the termination document or the signed sworn statement (incetare), a signed declaration (declaratie), anything else (altele). PDF, JPG, PNG or TIFF, up to 10 MB. Files in a dosar become the zip attachment of the C168 filed from it.',
+    inputSchema: z.object({ id: z.string().uuid().describe('Dosar id'), path: z.string().describe('Local file path'), kind: z.enum(['contract', 'act_aditional', 'incetare', 'declaratie', 'altele']).optional(), companyId: companyIdSchema }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const abs = resolve(params.path as string);
+      return formatResponse(await apiRequest(`/api/v1/dosare/${params.id as string}/files`, { method: 'POST', filePath: abs, fileFieldName: 'file', formFields: { kind: (params.kind as string | undefined) ?? 'altele' }, companyId: params.companyId as string | undefined }));
+    },
+  },
+  {
+    name: 'dosare_files_download',
+    description: 'Download a file kept in a dosar to a local path (e.g. to sign it with agent_sign_pdf, then upload the signed copy with dosare_files_upload).',
+    inputSchema: z.object({ id: z.string().uuid().describe('Dosar id'), fileId: z.string().uuid(), outFile: z.string(), companyId: companyIdSchema }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const res = await apiRequest(`/api/v1/dosare/${params.id as string}/files/${params.fileId as string}/download`, { binary: true, companyId: params.companyId as string | undefined });
+      if (!res.ok) return formatResponse(res);
+      const out = resolve(params.outFile as string);
+      writeFileSync(out, Buffer.isBuffer(res.data) ? res.data : Buffer.from(String(res.data)));
+      return formatResponse({ ok: true, status: 200, data: { file: out } });
+    },
+  },
+  {
+    name: 'dosare_c168_prefill',
     description:
-      "Generate a legal document from a rental-contract dosar, prefilled with the landlord (company), tenant, contract and property: 'conventie_incetare_inchiriere' (termination agreement) or 'declaratie_incetare_contract' (landlord's sworn statement, the C168 termination attachment). Without `render` you get the prefilled fields to review with the user; with render:true and the reviewed `fields` (overrides) you get the PDF (written to outFile when given). Sign it by hand or with agent_sign_pdf, then attach it to the C168 termination.",
+      "The C168 input (registration / amendment / termination of the rental contract) prefilled from a rental-contract dosar and the company, with Storno's rule issues listing what is still missing (nomenclator address codes for the property, tenant and landlord; tenant CNP …). Fill the gaps with anaf_nomenclator_* and the user, then dosare_c168_create. Also lists the dosar files that can be attached.",
+    inputSchema: z.object({ id: z.string().uuid().describe('Rental-contract dosar id'), actiune: z.enum(['inregistrare', 'modificare', 'incetare']).optional(), companyId: companyIdSchema }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      return formatResponse(await apiRequest(`/api/v1/dosare/${params.id as string}/c168-prefill`, { query: { actiune: (params.actiune as string | undefined) ?? 'inregistrare' }, companyId: params.companyId as string | undefined }));
+    },
+  },
+  {
+    name: 'dosare_c168_create',
+    description:
+      'Create the C168 declaration in the dosar from the reviewed input (schema: declaration_form_spec C168) with the attachment: dosar files by id (fileIds) and/or local files (attachmentPaths) — the scanned contract for a registration, the addendum for an amendment, the termination document or the signed sworn statement for a termination. Storno applies its rules (errors → 422 with issues), stores the reviewed addresses in the dosar for next time and sets the next step. Then declarations_validate and declarations_file_via_agent. ANAF processes one C168 per landlord and period at a time.',
     inputSchema: z.object({
       id: z.string().uuid().describe('Rental-contract dosar id'),
-      type: z.enum(['conventie_incetare_inchiriere', 'declaratie_incetare_contract']),
+      actiune: z.enum(['inregistrare', 'modificare', 'incetare']),
+      input: z.record(z.string(), z.unknown()).optional().describe('Reviewed C168 input; omitted → the prefill as is'),
+      fileIds: z.array(z.string().uuid()).optional(),
+      attachmentPaths: z.array(z.string()).optional(),
+      companyId: companyIdSchema,
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const attachments = ((params.attachmentPaths as string[] | undefined) ?? []).map((p) => { const abs = resolve(p); return { name: basename(abs), contentBase64: readFileSync(abs).toString('base64') }; });
+      return formatResponse(await apiRequest(`/api/v1/dosare/${params.id as string}/c168`, { method: 'POST', body: { actiune: params.actiune, input: params.input, fileIds: params.fileIds, attachments }, companyId: params.companyId as string | undefined }));
+    },
+  },
+  {
+    name: 'dosare_document',
+    description:
+      "Generate a legal document from a rental-contract dosar, prefilled with the landlord (company), tenant, contract and property: 'conventie_incetare_inchiriere' (termination agreement), 'declaratie_incetare_contract' (landlord's sworn statement, the C168 termination attachment), 'act_aditional_inchiriere' (addendum: extension and/or new rent; fields act{numar,data}, prelungire{data_inceput,data_sfarsit}, chirie_noua{suma,valuta,de_la}) or 'notificare_incetare_inchiriere' (termination notice: data_incetare, preaviz_zile, motiv). Without `render` you get the prefilled fields to review with the user; with render:true and the reviewed `fields` (overrides) you get the PDF (written to outFile when given). Sign it by hand or with agent_sign_pdf, then attach it to the C168 termination.",
+    inputSchema: z.object({
+      id: z.string().uuid().describe('Rental-contract dosar id'),
+      type: z.enum(['conventie_incetare_inchiriere', 'declaratie_incetare_contract', 'act_aditional_inchiriere', 'notificare_incetare_inchiriere']),
       render: z.boolean().optional(),
       fields: z.record(z.string(), z.unknown()).optional().describe('Overrides for the prefilled fields (e.g. locatar.adresa, data_incetare, motiv)'),
       outFile: z.string().optional(),
