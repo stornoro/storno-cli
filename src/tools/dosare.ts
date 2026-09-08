@@ -211,6 +211,28 @@ export const tools = [
     },
   },
   {
+    name: 'dosare_registry_proposals',
+    description:
+      "Contracts listed in ANAF's registry extract (\"Registrul contractelor de locatiune\", the answer to the C168 SPV request — request it with spv_request_prepare type C168) with their state after all filings (active / expired without termination / terminated), each matched to the existing dosare. Reads the newest extract archived in the SPV inbox, or the PDF at pdfPath. Then dosare_registry_import for the ones without a dosar.",
+    inputSchema: z.object({ pdfPath: z.string().optional().describe('Local PDF of the extract, when it was downloaded by hand'), companyId: companyIdSchema }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      if (params.pdfPath) {
+        return formatResponse(await apiRequest('/api/v1/dosare/registry-proposals', { method: 'POST', filePath: resolve(params.pdfPath as string), fileFieldName: 'file', formFields: {}, companyId: params.companyId as string | undefined }));
+      }
+      return formatResponse(await apiRequest('/api/v1/dosare/registry-proposals', { companyId: params.companyId as string | undefined }));
+    },
+  },
+  {
+    name: 'dosare_registry_import',
+    description: 'Create rental-contract dosare for registry contracts (pass the contract objects from dosare_registry_proposals, usually those with existingDosarId null). Terminated contracts become closed dosare; expired ones without a termination filing are flagged for attention (file C168 încetare or an addendum).',
+    inputSchema: z.object({ contracts: z.array(z.record(z.string(), z.unknown())).min(1), companyId: companyIdSchema }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      return formatResponse(await apiRequest('/api/v1/dosare/registry-import', { method: 'POST', body: { contracts: params.contracts }, companyId: params.companyId as string | undefined }));
+    },
+  },
+  {
     name: 'dosare_document',
     description:
       "Generate a legal document from a rental-contract dosar, prefilled with the landlord (company), tenant, contract and property: 'conventie_incetare_inchiriere' (termination agreement), 'declaratie_incetare_contract' (landlord's sworn statement, the C168 termination attachment), 'act_aditional_inchiriere' (addendum: extension and/or new rent; fields act{numar,data}, prelungire{data_inceput,data_sfarsit}, chirie_noua{suma,valuta,de_la}) or 'notificare_incetare_inchiriere' (termination notice: data_incetare, preaviz_zile, motiv). Without `render` you get the prefilled fields to review with the user; with render:true and the reviewed `fields` (overrides) you get the PDF (written to outFile when given). Sign it by hand or with agent_sign_pdf, then attach it to the C168 termination.",
