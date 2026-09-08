@@ -155,11 +155,14 @@ export const tools = [
   {
     name: 'spv_request_types',
     description:
-      'Catalog of what can be requested from ANAF SPV (solicitari): reports (Fisa Rol, VECTOR FISCAL, Situatie Sintetica, Obligatii de plata, Istoric declaratii, Bilant), copies of filed declarations (D300, D394, D112, D212 ...), Duplicat Recipisa, Adeverinte Venit, certificates, decisions. Each entry lists the required and optional parameters (an, luna, motiv, numar_inregistrare, cui_pui, lunai/lunas), the first year with data, ANAF notes and wsSupported (false = the web service answers "tip raport necunoscut"; the agent then submits the SPV website form instead, e.g. C168, certificates, decisions); also the exact reasons accepted for income certificates.',
-    inputSchema: z.object({}),
-    handler: async (): Promise<string> => {
+      'Catalog of what can be requested from ANAF SPV (solicitari): reports (Fisa Rol, VECTOR FISCAL, Situatie Sintetica, Obligatii de plata, Istoric declaratii, Bilant), copies of filed declarations (D300, D394, D112, D212 ...), Duplicat Recipisa, Adeverinte Venit, certificates, decisions. Filtered for the company the way the SPV form does it: a CNP (natural person) gets D212, Duplicat declaratie unica, Adeverinte Venit, Istoric declaratii PF, C168, fisa rol…; a CUI gets the company returns, bilant, decisions. Each entry carries `audience` and lists the required and optional parameters (an, luna, motiv, numar_inregistrare, cui_pui, lunai/lunas), the first year with data, ANAF notes and wsSupported (false = the web service answers "tip raport necunoscut"; the agent then submits the SPV website form instead, e.g. C168, certificates, decisions); also the exact reasons accepted for income certificates.',
+    inputSchema: z.object({
+      companyId: companyIdSchema,
+      all: z.boolean().optional().describe('true = the whole catalog; default = only what the SPV form offers the company (a CNP sees a different list than a CUI)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
-      const res = await apiRequest('/api/v1/spv/requests/types', { method: 'GET' });
+      const res = await apiRequest('/api/v1/spv/requests/types', { method: 'GET', query: params.all ? { all: '1' } : undefined, companyId: params.companyId as string | undefined });
       return formatResponse(res);
     },
   },

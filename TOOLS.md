@@ -4066,7 +4066,12 @@ Mark one document (or all) as read. **Parameters:** `uuid` (optional), `companyI
 
 ### `spv_request_types`
 
-Catalog of ANAF SPV requests (solicitari) with required/optional parameters, first year with data and ANAF notes, plus the exact reasons accepted for income certificates.
+Catalog of ANAF SPV requests (solicitari) with required/optional parameters, first year with data and ANAF notes, plus the exact reasons accepted for income certificates. Filtered the way the SPV form does it: a CNP (13 digits, natural person) gets the person list (D212, `Duplicat declaratie unica`, `Adeverinte Venit`, `Istoric declaratii PF`, `Venituri Formular Banca`, `Detalii neconcordante D112 REVISAL`, C168, fisa rol, vector fiscal…), a CUI the company list (company returns, bilant, `Istoric declaratii`, decisions). Each entry carries `audience` (`cnp`, `cui`, `both`). `spv_request_prepare` refuses a type outside the company's list.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `companyId` | string | No | Company UUID (overrides STORNO_COMPANY_ID) |
+| `all` | boolean | No | Whole catalog instead of the company's list |
 
 ### `spv_requests_list`
 
