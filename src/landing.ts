@@ -14,7 +14,7 @@ export function getLandingHtml(baseUrl: string): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Storno MCP Server</title>
-  <meta name="description" content="Connect your AI tools to Storno via the Model Context Protocol. Manage invoices, clients, and e-Factura from Claude, Cursor, and more.">
+  <meta name="description" content="Connect your AI tools to Storno via the Model Context Protocol. Manage invoices, clients, and e-Factura from Claude, ChatGPT, Cursor, and more.">
   <link rel="icon" href="https://storno.ro/favicon.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -88,7 +88,7 @@ export function getLandingHtml(baseUrl: string): string {
         <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-zinc-900 leading-[1.1]">
           Connect your <span class="text-primary-600">AI</span> to Storno
         </h1>
-        <p class="mt-5 text-lg text-muted leading-relaxed">Use the Model Context Protocol (MCP) to let Claude, Cursor, and other AI tools manage your invoices, clients, and e-Factura workflow.</p>
+        <p class="mt-5 text-lg text-muted leading-relaxed">Use the Model Context Protocol (MCP) to let Claude, ChatGPT, Cursor, and other AI tools manage your invoices, clients, and e-Factura workflow.</p>
       </div>
 
       <div class="mt-8 flex items-center gap-3 bg-white border border-zinc-200 rounded-xl px-4 py-3 max-w-xl shadow-sm">
@@ -155,7 +155,7 @@ export function getLandingHtml(baseUrl: string): string {
     <!-- Other AI clients -->
     <section class="pb-14 fade-in-delay relative">
       <h2 class="text-2xl font-bold text-zinc-900 mb-6">Other AI clients</h2>
-      <div class="grid sm:grid-cols-3 gap-4">
+      <div class="grid sm:grid-cols-2 gap-4">
 
         <!-- Claude Code -->
         <div class="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm card-hover">
@@ -196,6 +196,22 @@ export function getLandingHtml(baseUrl: string): string {
 }</code></pre>
             <button onclick="copyText(JSON.stringify({mcpServers:{storno:{command:'npx',args:['-y','mcp-remote','${mcpUrl}']}}}, null, 2), this)" class="copy-btn absolute top-2.5 right-2.5 text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded-md cursor-pointer transition-colors">Copy</button>
           </div>
+        </div>
+
+        <!-- ChatGPT -->
+        <div class="bg-white border border-zinc-200 rounded-lg p-5 shadow-sm card-hover">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center ring-1 ring-inset ring-primary-500/25">
+              <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h8M8 14h5m-9 6l3.5-3.5H18a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v14z"/></svg>
+            </div>
+            <h3 class="font-semibold text-zinc-900">ChatGPT</h3>
+          </div>
+          <p class="text-sm text-muted mb-3">Settings &rarr; Connectors &rarr; Advanced &rarr; enable <strong>Developer mode</strong>, then <strong>Create</strong> a connector with this URL:</p>
+          <div class="relative">
+            <pre class="bg-zinc-900 rounded-lg p-4 overflow-x-auto"><code class="text-zinc-100">${mcpUrl}</code></pre>
+            <button onclick="copyText('${mcpUrl}', this)" class="copy-btn absolute top-2.5 right-2.5 text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-2 py-1 rounded-md cursor-pointer transition-colors">Copy</button>
+          </div>
+          <p class="text-xs text-muted mt-3">Authentication: OAuth. Sign in with your Storno account when asked.</p>
         </div>
 
         <!-- Cursor / Windsurf -->
