@@ -22,11 +22,13 @@ export const tools = [
     inputSchema: z.object({
       type: z.enum(DOSAR_TYPES).optional(),
       status: z.enum(DOSAR_STATUSES).optional(),
+      clientId: z.string().uuid().optional().describe('Only dosare linked to this client (the tenant)'),
+      supplierId: z.string().uuid().optional().describe('Only dosare linked to this supplier'),
       companyId: companyIdSchema,
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
-      return formatResponse(await apiRequest('/api/v1/dosare', { query: { type: params.type as string | undefined, status: params.status as string | undefined }, companyId: params.companyId as string | undefined }));
+      return formatResponse(await apiRequest('/api/v1/dosare', { query: { type: params.type as string | undefined, status: params.status as string | undefined, clientId: params.clientId as string | undefined, supplierId: params.supplierId as string | undefined }, companyId: params.companyId as string | undefined }));
     },
   },
   {
@@ -88,9 +90,11 @@ export const tools = [
   },
   {
     name: 'dosare_update',
-    description: 'Update a dosar: title, subject fields (merged), status (active / attention / closed), nextStep, deadlineAt + deadlineLabel, notes.',
+    description: 'Update a dosar: title, subject fields (merged), status (active / attention / closed), nextStep, deadlineAt + deadlineLabel, notes, and the link to the other party as a client / supplier of the company (clientId / supplierId; null unlinks). The link is found by the tenant CUI/CNP automatically when a dosar is created; set it by hand when the client record has a different identifier.',
     inputSchema: z.object({
       id: z.string().uuid(),
+      clientId: z.string().uuid().nullable().optional(),
+      supplierId: z.string().uuid().nullable().optional(),
       title: z.string().optional(),
       subject: z.record(z.string(), z.unknown()).optional(),
       status: z.enum(DOSAR_STATUSES).optional(),

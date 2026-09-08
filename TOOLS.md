@@ -158,13 +158,22 @@ Get detailed information for a specific company by UUID. Returns all configurati
 
 ### `companies_create`
 
-Create a new company by providing its CIF (Romanian tax identification number). The system automatically validates the CIF with ANAF and retrieves official registration data (name, address, VAT status). The CIF can be provided with or without the RO prefix.
+Add a company or a natural person. A company is created from its CIF (with or without RO): ANAF supplies the name, address and VAT status. A natural person (persoană fizică: the landlord who files the annual return D212 and registers rental contracts C168 as a person) is created with `type: "individual"`, the CNP, full name, city and county; nothing is fetched from ANAF, the CNP is checked (13 digits, control digit), VAT is never on. A CNP passed as `cif` is refused with `CNP_NOT_CIF`. Never invent a CNP.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `cif` | string | Yes | Romanian tax identification number / CIF (e.g., "12345678" or "RO12345678") |
+| `cif` | string | companies | Romanian tax identification number / CIF (e.g., "12345678" or "RO12345678") |
+| `type` | `company` / `individual` | No | `individual` for a natural person |
+| `cnp` | string | individuals | The person's CNP |
+| `name` | string | individuals | Full name |
+| `address` | string | No | Street and number |
+| `city` | string | individuals | City |
+| `state` | string | individuals | County |
+| `country`, `email`, `phone` | string | No | |
+
+The response carries `type` and `isIndividual`; `companies_update` edits a person's name and address directly (no ANAF refresh).
 
 ### `companies_update`
 
@@ -3277,8 +3286,8 @@ Dosare (case files) group what a person deals with ANAF about: a rental contract
 |---|---|
 | `dosare_actions` | "What do I have to do?": rejected filings with the reason, requests in error, deadlines within 14 days, contracts expiring within 60 days, unread somații; what ANAF is still processing; answers of the last 14 days |
 | `dosare_stats` | rental portfolio: properties, active and expiring contracts, monthly rent by currency, expected rent per income year from the contracts versus what the D212s declared |
-| `dosare_list` / `dosare_get` | dosare with counts; one dosar with children and timeline |
-| `dosare_create` / `dosare_update` / `dosare_delete` | manage dosare; a rental contract gets its title and C168 deadline from the subject |
+| `dosare_list` / `dosare_get` | dosare with counts (filter by `clientId` / `supplierId`); one dosar with children, timeline and the linked `client` / `supplier` |
+| `dosare_create` / `dosare_update` / `dosare_delete` | manage dosare; a rental contract gets its title and C168 deadline from the subject, and its tenant is linked to the client / supplier with the same CUI or CNP (override with `clientId` / `supplierId`, null unlinks) |
 | `dosare_attach` | link or unlink a declaration, request or message |
 | `dosare_annual_return` | the `Declarația unică <an>` dosar with the 25 May deadline (reminders 30/7/1 days before) |
 | `dosare_d212_prefill` / `dosare_d212_create` | D212 rent input built from the contracts (RON rents multiplied by months; other currencies flagged for BNR conversion), then the draft in the dosar → `declarations_validate` → `declarations_prepare` + agent |
@@ -3291,6 +3300,10 @@ Dosare (case files) group what a person deals with ANAF about: a rental contract
 Manual filing without the agent: `declarations_download_pdf` writes the PDF ANAF accepts (XML embedded, zip attached) so the person uploads it in SPV themselves.
 
 Typical conversation: "what do I owe ANAF?" → `dosare_actions`; "register my new rental" → `dosare_create` (subject with tenant CNP) → `declaration_build` C168 → `declaration_pdf` with the contract scan → `agent_submit_declaration_pdf`; in May: `dosare_annual_return` → `dosare_d212_prefill` → review → `dosare_d212_create` → validate → file. Rule learned from real filings: one C168 per landlord and period in processing at a time.
+
+### `related_get`
+
+Everything connected to one record, in one call: `type` (client, supplier, invoice, recurring_invoice, declaration, spv_document, spv_request, dosar) and `id`. Groups returned as they apply: `dosare`, `clients`, `suppliers`, `invoices` (recent, with balance), `recurringInvoices`, `declarations`, `spvRequests`, `spvDocuments`; each item has `title`, `subtitle`, `status`, `date` and `href` (the web page). A client leads to its rental dosare and through them to the C168 / D212 filed and the ANAF messages; an invoice leads to the tenant's dosar and the recurring invoice that issued it; an SPV message leads to the dosar it answered. Groups the user may not view are omitted.
 
 ### `agent_status` / `agent_certificates` / `agent_sign_pdf` / `agent_submit_declaration_pdf`
 

@@ -63,6 +63,7 @@ import { tools as telemetryTools } from './tools/telemetry.js';
 import { tools as declarationsTools } from './tools/declarations.js';
 import { tools as spvTools } from './tools/spv.js';
 import { tools as dosareTools } from './tools/dosare.js';
+import { tools as relatedTools } from './tools/related.js';
 import { tools as agentTools } from './tools/agent.js';
 
 interface ToolDef {
@@ -123,6 +124,7 @@ const allTools: ToolDef[] = [
   ...declarationsTools,
   ...spvTools,
   ...dosareTools,
+  ...relatedTools,
   ...agentTools,
 ];
 
@@ -130,7 +132,7 @@ const allTools: ToolDef[] = [
 export function createMcpServer(): McpServer {
   const server = new McpServer({
     name: 'storno',
-    version: '1.0.34',
+    version: '1.0.35',
   });
 
   for (const tool of allTools) {

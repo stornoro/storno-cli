@@ -36,21 +36,31 @@ export const tools = [
   {
     name: 'companies_create',
     description:
-      'Create a new company by providing its CIF (Romanian tax identification number). The system automatically validates the CIF with ANAF and retrieves official registration data (name, address, VAT status). The CIF can be provided with or without the RO prefix.',
+      'Add a company or a natural person to the organization. Company: give the CIF (with or without RO); ANAF supplies name, address and VAT status. Natural person (persoană fizică, the landlord who files D212 / C168 as a person): type "individual" with the CNP, full name, city and county (address optional); nothing is fetched from ANAF and the CNP is checked (13 digits, control digit). Never invent a CNP.',
     inputSchema: z.object({
-      cif: z
-        .string()
-        .describe(
-          'Romanian tax identification number / CIF (e.g., "12345678" or "RO12345678")'
-        ),
+      cif: z.string().optional().describe('Romanian tax identification number / CIF (e.g., "12345678" or "RO12345678") — companies only'),
+      type: z.enum(['company', 'individual']).optional().describe('"individual" for a natural person identified by CNP (default company)'),
+      cnp: z.string().optional().describe('The person\'s CNP (13 digits) — individuals only'),
+      name: z.string().optional().describe('Full name — individuals only'),
+      address: z.string().optional().describe('Street and number — individuals only'),
+      city: z.string().optional().describe('City / localitate — individuals only (required)'),
+      state: z.string().optional().describe('County / județ — individuals only (required)'),
+      country: z.string().optional().describe('ISO country, default RO'),
+      email: z.string().optional(),
+      phone: z.string().optional(),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
 
-      const { cif } = params as { cif: string };
+      const p = params as { cif?: string; type?: string; cnp?: string };
+      if (p.type === 'individual' || (p.cnp && !p.cif)) {
+        const { cif: _cif, ...body } = params;
+        return formatResponse(await apiRequest('/api/v1/companies', { method: 'POST', body: { ...body, type: 'individual' } }));
+      }
+      if (!p.cif) return 'Error: cif is required for a company; for a natural person pass type "individual" with cnp, name, city and state.';
       const result = await apiRequest('/api/v1/companies', {
         method: 'POST',
-        body: { cif },
+        body: { cif: p.cif },
       });
       return formatResponse(result);
     },
