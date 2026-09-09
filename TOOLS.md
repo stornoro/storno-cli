@@ -158,14 +158,14 @@ Get detailed information for a specific company by UUID. Returns all configurati
 
 ### `companies_create`
 
-Add a company or a natural person. A company is created from its CIF (with or without RO): ANAF supplies the name, address and VAT status. A natural person (persoană fizică: the landlord who files the annual return D212 and registers rental contracts C168 as a person) is created with `type: "individual"`, the CNP, full name, city and county; nothing is fetched from ANAF, the CNP is checked (13 digits, control digit), VAT is never on. A CNP passed as `cif` is refused with `CNP_NOT_CIF`. Never invent a CNP.
+Add a company or an individual person. A company is created from its CIF (with or without RO): ANAF supplies the name, address and VAT status. An individual person (persoană fizică: the landlord who files the annual return D212 and registers rental contracts C168 as a person) is created with `type: "individual"`, the CNP, full name, city and county; nothing is fetched from ANAF, the CNP is checked (13 digits, control digit), VAT is never on. A CNP passed as `cif` is refused with `CNP_NOT_CIF`. Never invent a CNP.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `cif` | string | companies | Romanian tax identification number / CIF (e.g., "12345678" or "RO12345678") |
-| `type` | `company` / `individual` | No | `individual` for a natural person |
+| `type` | `company` / `individual` | No | `individual` for an individual person |
 | `cnp` | string | individuals | The person's CNP |
 | `name` | string | individuals | Full name |
 | `address` | string | No | Street and number |
@@ -4066,7 +4066,7 @@ Mark one document (or all) as read. **Parameters:** `uuid` (optional), `companyI
 
 ### `spv_request_types`
 
-Catalog of ANAF SPV requests (solicitari) with required/optional parameters, first year with data and ANAF notes, plus the exact reasons accepted for income certificates. Filtered the way the SPV form does it: a CNP (13 digits, natural person) gets the person list (D212, `Duplicat declaratie unica`, `Adeverinte Venit`, `Istoric declaratii PF`, `Venituri Formular Banca`, `Detalii neconcordante D112 REVISAL`, C168, fisa rol, vector fiscal…), a CUI the company list (company returns, bilant, `Istoric declaratii`, decisions). Each entry carries `audience` (`cnp`, `cui`, `both`). `spv_request_prepare` refuses a type outside the company's list.
+Catalog of ANAF SPV requests (solicitari) with required/optional parameters, first year with data and ANAF notes, plus the exact reasons accepted for income certificates. Filtered the way the SPV form does it: a CNP (13 digits, individual person) gets the person list (D212, `Duplicat declaratie unica`, `Adeverinte Venit`, `Istoric declaratii PF`, `Venituri Formular Banca`, `Detalii neconcordante D112 REVISAL`, C168, fisa rol, vector fiscal…), a CUI the company list (company returns, bilant, `Istoric declaratii`, decisions). Each entry carries `audience` (`cnp`, `cui`, `both`). `spv_request_prepare` refuses a type outside the company's list.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
