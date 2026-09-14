@@ -660,6 +660,32 @@ export const tools = [
   },
 
   {
+    name: 'invoices_efactura_message',
+    description:
+      'Send a message to the issuer of a RECEIVED e-Factura through SPV (ANAF "RASP"): dispute the invoice, ask for a corrected one, say it is not yours. ANAF delivers it to the seller under the invoice\'s upload index; the invoice itself is not changed. Needs a received invoice with an ANAF upload index and a valid e-Factura token on the company. Max 4000 characters.',
+    inputSchema: z.object({
+      uuid: z.string().describe('UUID of the received invoice'),
+      message: z.string().min(1).max(4000).describe('Plain-text message for the issuer (Romanian, max 4000 characters)'),
+      companyId: z
+        .string()
+        .optional()
+        .describe('Company UUID override (uses active company if not set)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const companyId = getCompanyId(params);
+      if (!companyId) return noCompanySelected();
+
+      const { uuid, message } = params as { uuid: string; message: string };
+      const result = await apiRequest(`/api/v1/invoices/${uuid}/efactura-message`, {
+        method: 'POST',
+        companyId,
+        body: { message },
+      });
+      return formatResponse(result);
+    },
+  },
+  {
     name: 'invoices_submit',
     description:
       'Submit an issued invoice to the ANAF e-Factura system. The invoice must be in "issued" status. Changes status to "sent_to_provider". ANAF validates the invoice asynchronously — poll invoices_get or use invoices_events to check validation result.',

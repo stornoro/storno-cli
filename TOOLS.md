@@ -418,6 +418,18 @@ Issue a draft invoice. Validates the data, assigns a series number, generates UB
 | `uuid` | string | Yes | Invoice UUID to issue |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
+### `invoices_efactura_message`
+
+Message to the issuer of a **received** e-Factura through SPV (ANAF standard `RASP`): a dispute, a request for a corrected invoice, "this invoice is not ours". ANAF forwards it to the seller under the invoice's upload index; nothing changes on the invoice, the message is kept in the invoice events (`efactura_message_sent`).
+
+| Parameter | Required | Description |
+|---|---|---|
+| `uuid` | yes | received invoice UUID |
+| `message` | yes | plain text, max 4000 characters |
+| `companyId` | no | company override |
+
+Errors: `NOT_RECEIVED_INVOICE` (outgoing invoice), `NO_UPLOAD_INDEX` (invoice was not synced from SPV), `ANAF_TOKEN_REQUIRED` (connect the company to ANAF first), `ANAF_REJECTED`.
+
 ### `invoices_submit`
 
 Submit an issued invoice to the ANAF e-Factura system. The invoice must be in "issued" status. Changes status to "sent_to_provider". ANAF validates the invoice asynchronously — poll invoices_get or use invoices_events to check validation result.
