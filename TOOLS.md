@@ -52,8 +52,9 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Telemetry](#telemetry)
 - [Tax Declarations](#tax-declarations)
 - [SPV Inbox (ANAF documents)](#spv-inbox-anaf-documents)
+- [Fiscal Calendar](#fiscal-calendar)
 
-**Total tools: 249**
+**Total tools: 250**
 
 ---
 
@@ -928,6 +929,45 @@ Export clients in Saga XML format for accounting software integration (e.g., Sag
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+### `client_statement`
+
+Customer statement (situație clienți) for one client: the unpaid outgoing invoices as of a date (number, issue/due date, total, paid, outstanding, days overdue), totals, the client balance and the outstanding amount split into aging bands (`current`, `days1_30`, `days31_60`, `days61_90`, `days91_120`, `days121_180`, `over180`), plus the company bank accounts. Storno/credit documents are listed as credits and reduce the balance; invoices in other currencies than the company default are listed but summarised separately in `otherCurrencies`.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `uuid` | string | Yes | Client UUID |
+| `asOf` | string | No | Reference date (YYYY-MM-DD). Invoices issued after it are ignored and days overdue are counted up to it. Default: today |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+### `client_statements`
+
+Customer statements for every client of the company with a positive balance, sorted by balance descending, with company-wide totals and aging bands. Use it to see who owes money and how old the debt is before sending reminders with `client_statement_email`.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `asOf` | string | No | Reference date (YYYY-MM-DD), default today |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+### `client_statement_email`
+
+E-mail the statement of unpaid invoices ("Facturi neachitate {company}") with the PDF attached. Pass `uuid` to send to one client (to its e-mail, or `to` — which must be an address of one of your clients), or omit it to send to every client with a balance of at least `minBalance` and an e-mail address. Use `dryRun: true` first: it returns who would receive the statement and who is skipped (`no_email`, `below_min_balance`, `unsubscribed`) without sending anything. Requires the invoice-sending permission and a plan with e-mail sending. The bulk send stops at the plan's daily/burst e-mail limit and reports `stoppedReason`.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `uuid` | string | No | Client UUID. Omit to e-mail all clients with a balance |
+| `to` | string | No | Recipient override for a single client (defaults to the client e-mail) |
+| `message` | string | No | Optional plain-text message appended to the standard Romanian body (max 2000 chars) |
+| `asOf` | string | No | Reference date (YYYY-MM-DD), default today |
+| `minBalance` | number | No | Bulk only: minimum balance a client must owe to receive the statement (default 0.01) |
+| `dryRun` | boolean | No | Do not send; return the recipients and the skip reasons (single client: the statement that would be sent) |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ---
@@ -3961,13 +4001,13 @@ Get a single tax declaration by UUID. Returns full details including populated d
 
 ### `declarations_create`
 
-Create a new tax declaration and auto-populate from existing invoice data. Aggregates invoices by partner CIF and VAT rate.
+Create a new tax declaration and auto-populate from existing invoice data. Aggregates invoices by partner CIF and VAT rate. `d301` (decont special de TVA, companies not registered for VAT; purchases from abroad with self-assessed VAT, monthly) and `d398` (OSS, regimul UE; special-regime art. 314–315 sales to consumers in other member states, quarterly — pass any month of the quarter) are populated from invoices too; `data.warnings` lists the missing prerequisites.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `type` | string | Yes | Declaration type (d394, d300, d390, d100, d112) |
+| `type` | string | Yes | Declaration type (d394, d300, d390, d301, d398, d100, d112, d212, c168) |
 | `year` | number | Yes | Declaration year (e.g. 2026) |
 | `month` | number | Yes | Declaration month (1–12) |
 | `periodType` | string | No | Period type (default: "monthly") |
@@ -4160,3 +4200,33 @@ Relay ANAF's listing; archives, classifies, notifies; returns `documents[]` to f
 
 ### `spv_document_upload`
 Store a fetched PDF (base64). **Parameters:** `uuid`, `statusCode`, `bodyBase64`, `companyId`
+
+---
+
+## Fiscal Calendar
+
+The filing deadlines a company has to meet, derived from its profile — `vatPayer`, `vatPeriod` (monthly / quarterly), `incomeTaxPeriod`, `hasEmployees`, person or company (see `companies_update`) — and from its invoices: a period with an EU counterparty adds D390, a non-VAT payer with invoices from foreign suppliers gets D301. A deadline that falls on a Saturday, a Sunday or a Romanian legal holiday moves to the next working day. Members are notified 7, 3 and 1 days before an unfiled deadline (`fiscal.deadline`).
+
+| Code | Applies when | Due |
+|---|---|---|
+| D300 | VAT payer | 25th of the month after the period (monthly / quarterly) |
+| D390 | VAT payer with intra-community operations in the month | 25th of the next month |
+| D394 | VAT payer | 30th of the month after the period |
+| D301 | non-VAT payer with foreign supplier invoices in the month | 25th of the next month |
+| D100 | company, per `incomeTaxPeriod` (quarterly by default) | 25th of the month after the period |
+| D112 | `hasEmployees` | 25th of the next month |
+| D406 (SAF-T) | company; VAT period, quarterly without VAT registration | last day of the month after the period |
+| D212 | individual | 25 May for the previous year |
+| BILANT | company | last working day of May for the previous year |
+
+### `fiscal_calendar`
+
+Deadlines for the next `days` days (default 60, max 366) from `from` (default today), plus the unfiled ones of the last month.
+
+**Parameters:**
+- `from` (string, optional): start date `YYYY-MM-DD`
+- `days` (number, optional): window length, 1–366
+- `allCompanies` (boolean, optional): every company the user can see, each item carrying `company {id, name, cif}` — the accountant view
+- `companyId` (string, optional)
+
+**Returns:** `{ data: [{ code, label, dueDate, nominalDueDate, daysLeft, period: { year, month | quarter, from, to }, appliesBecause, declarationType, status }], counts: { due, overdue, filed }, from, days }`. `status` is `filed` when a submitted / accepted declaration of that type exists for the period, `overdue` when past due without one, `due` otherwise. `declarationType` is what `declarations_create` expects (`null` for SAF-T and the annual statements, filed outside Storno).
