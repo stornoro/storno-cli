@@ -3334,12 +3334,12 @@ Everything connected to one record, in one call: `type` (client, supplier, invoi
 
 ### `agent_status` / `agent_certificates` / `agent_sign_pdf` / `agent_submit_declaration_pdf`
 
-Local Storno Agent tools (the agent runs on the user's computer with the qualified certificate; these work with the stdio MCP server on the same machine). PIN via `pin`, the `STORNO_AGENT_PIN` environment variable, or the PIN remembered on the computer by the agent (web app → Company → ANAF → Agent → Save preference, agent ≥ 1.7.8, kept in the OS secure store); nothing is signed or sent without one of them.
+Local Storno Agent tools (the agent runs on the user's computer with the qualified certificate; these work with the stdio MCP server on the same machine). PIN via `pin`, the `STORNO_AGENT_PIN` environment variable, or the PIN remembered on the computer by the agent (web app → Company → ANAF → Agent → Save preference, agent ≥ 1.7.8, kept in the OS secure store); nothing is signed or sent without one of them. **Cloud certificates** (Trans Sped EasySign, certSIGN / DigiSign cloud, on Windows; agent ≥ 1.8.0 lists them with `kind: "cloud"`) have no PIN: the tools skip the PIN check and the vendor app asks the user to approve each signature or ANAF login (up to 3 minutes per operation).
 
 | Tool | Parameters | What it does |
 |---|---|---|
 | `agent_status` | none | agent version, update availability |
-| `agent_certificates` | none | certificates the agent can use (id, subject, issuer, expiry) |
+| `agent_certificates` | none | certificates the agent can use (id, subject, issuer, expiry, `kind`: token / cloud / software, Windows key `provider`) |
 | `agent_sign_pdf` | `files[]` (paths or directories), `certificateId`, `pin?`, `outDir?`, `visible?`, `signerName?` | signs every PDF with the certificate (PAdES), writes `<name>.signed.pdf`; stops at the first PIN error |
 | `agent_submit_declaration_pdf` | `file`, `certificateId`, `pin?`, `fileName?` | signs a DUKIntegrator PDF and uploads it to the e-guvernare declarations portal; returns ANAF's upload index |
 

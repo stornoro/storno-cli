@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { agent, pinFrom, agentRemembersPin, PIN_MISSING } from './agent.js';
+import { agent, pinFrom, pinSatisfied, PIN_MISSING } from './agent.js';
 import { apiRequest } from '../client.js';
 import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/errors.js';
 import { getConfig } from '../config.js';
@@ -375,7 +375,7 @@ export const tools = [
       if (!getConfig().token) return notAuthenticated();
       const pin = pinFrom(params);
       const { id, certificateId, companyId } = params as { id: string; certificateId: string; companyId?: string };
-      if (!pin && !(await agentRemembersPin(certificateId))) return formatResponse({ ok: false, status: 400, error: PIN_MISSING });
+      if (!(await pinSatisfied(certificateId, pin))) return formatResponse({ ok: false, status: 400, error: PIN_MISSING });
       const effectiveCompanyId = companyId || getConfig().companyId;
       if (!effectiveCompanyId) return noCompanySelected();
 

@@ -55,6 +55,28 @@ export async function agentRemembersPin(certificateId: string): Promise<boolean>
 
 export const PIN_MISSING = 'PIN required: pass pin, set STORNO_AGENT_PIN, or remember the PIN once in the Storno web app (Company → ANAF → Agent → Save preference). Nothing is signed or sent without it.';
 
+/**
+ * Cloud certificates (Trans Sped EasySign, certSIGN / DigiSign cloud) and software
+ * certificates have no PIN: the vendor app approves each operation (agent ≥ 1.8.0
+ * reports `kind`). Unknown certificates count as tokens and keep the PIN gate.
+ */
+export async function agentCertificateIsPinless(certificateId: string): Promise<boolean> {
+  try {
+    const res = await agent('/certificates', undefined, 30_000);
+    const cert = (res?.certificates ?? []).find((c: any) => String(c.id).toUpperCase() === certificateId.toUpperCase());
+    return cert?.kind === 'cloud' || cert?.kind === 'software';
+  } catch {
+    return false;
+  }
+}
+
+/** True when the operation may go ahead: a PIN was given, the agent remembers one, or the certificate takes none. */
+export async function pinSatisfied(certificateId: string, pin: string | undefined): Promise<boolean> {
+  if (pin) return true;
+  if (await agentRemembersPin(certificateId)) return true;
+  return agentCertificateIsPinless(certificateId);
+}
+
 function pdfFiles(inputs: string[]): string[] {
   const out: string[] = [];
   for (const p of inputs) {
@@ -91,7 +113,7 @@ export const tools = [
   },
   {
     name: 'agent_certificates',
-    description: 'Qualified certificates the local Storno Agent can use (USB tokens, Keychain / Windows store identities): id, subject, issuer, expiry. The id is what agent_sign_pdf and the submission tools need.',
+    description: 'Qualified certificates the local Storno Agent can use (USB tokens, Keychain / Windows store identities, cloud certificates such as Trans Sped EasySign on Windows): id, subject, issuer, expiry and kind (token = PIN required; cloud = the vendor app approves each operation, no PIN; software = no PIN). The id is what agent_sign_pdf and the submission tools need.',
     inputSchema: z.object({}),
     handler: async (): Promise<string> => ok(await agent('/certificates', undefined, 60_000)),
   },
@@ -109,7 +131,7 @@ export const tools = [
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const pin = pinFrom(params);
-      if (!pin && !(await agentRemembersPin(params.certificateId as string))) return fail(PIN_MISSING);
+      if (!(await pinSatisfied(params.certificateId as string, pin))) return fail(PIN_MISSING);
       const files = pdfFiles(params.files as string[]);
       if (files.length === 0) return fail('No PDF files found');
       const items = files.map((f) => ({ name: basename(f), pdf: readFileSync(f).toString('base64') }));
@@ -136,7 +158,7 @@ export const tools = [
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const pin = pinFrom(params);
-      if (!pin && !(await agentRemembersPin(params.certificateId as string))) return fail(PIN_MISSING);
+      if (!(await pinSatisfied(params.certificateId as string, pin))) return fail(PIN_MISSING);
       const file = resolve(params.file as string);
       const res = await agent('/sign-and-submit', {
         pdf: readFileSync(file).toString('base64'),
