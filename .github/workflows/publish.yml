@@ -61,16 +61,16 @@ jobs:
         if: github.ref_type == 'tag'
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          for i in {1..6}; do
+          for i in {1..30}; do
             PUBLISHED=$(npm view storno-cli@$TAG_VERSION version 2>/dev/null || true)
             if [ "$PUBLISHED" = "$TAG_VERSION" ]; then
               echo "✓ storno-cli@$TAG_VERSION confirmed on registry"
               exit 0
             fi
-            echo "Waiting for registry to reflect $TAG_VERSION (attempt $i/6)..."
-            sleep 10
+            echo "Waiting for registry to reflect $TAG_VERSION (attempt $i/30)..."
+            sleep 20
           done
-          echo "::error::storno-cli@$TAG_VERSION did not appear on the registry within 60s"
+          echo "::error::storno-cli@$TAG_VERSION did not appear on the registry within 10 minutes"
           exit 1
 
       # Create a GitHub Release page for the tag with auto-generated notes
