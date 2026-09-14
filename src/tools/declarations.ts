@@ -330,6 +330,20 @@ export const tools = [
     },
   },
   {
+    name: 'declarations_upload',
+    description:
+      'Bring a declaration made in another program into Storno: an XML file, or the ANAF PDF produced by SAGA / DUKIntegrator / the filled ANAF form (Storno reads the XML embedded in it). Type, year and month come from the document. The uploaded document is what gets validated (declarations_validate) and filed (declarations_file_via_agent) — nothing is regenerated. The recipisa lands in the dosar like any other filing.',
+    inputSchema: z.object({
+      filePath: z.string().describe('Local path of the .xml or .pdf file'),
+      companyId: z.string().optional().describe('Company UUID (overrides STORNO_COMPANY_ID env var)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const abs = resolve(String(params.filePath));
+      return formatResponse(await apiRequest('/api/v1/declarations/upload', { method: 'POST', filePath: abs, fileFieldName: 'file', companyId: params.companyId as string | undefined }));
+    },
+  },
+  {
     name: 'declarations_update',
     description: 'Update a draft declaration: `data` (for d212 / c168 the form input under data.input and attachments under data.attachments) and/or `metadata`. Only drafts can be edited. With `filedExternally` (any status but submitted/accepted) Storno records a filing made outside it and follows its state.',
     inputSchema: z.object({

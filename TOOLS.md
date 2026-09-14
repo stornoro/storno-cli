@@ -3961,6 +3961,15 @@ Create a new tax declaration and auto-populate from existing invoice data. Aggre
 | `periodType` | string | No | Period type (default: "monthly") |
 | `companyId` | string | No | Company UUID (overrides STORNO_COMPANY_ID env var) |
 
+### `declarations_upload`
+
+A declaration made elsewhere, as an XML file or as the ANAF PDF from SAGA / DUKIntegrator / the filled ANAF form (the embedded XML is read). Type and period come from the document; the document itself is validated and filed, never regenerated.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `filePath` | string | Yes | Local .xml or .pdf |
+| `companyId` | string | No | Company UUID |
+
 ### `declarations_recalculate`
 
 Recalculate a draft declaration by re-populating from current invoices.
