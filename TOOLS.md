@@ -3134,6 +3134,33 @@ List all users on the platform with pagination and filtering. SUPER_ADMIN only. 
 | `status` | enum(active, inactive, verified, unverified) | No | Filter by user status: active, inactive, verified, or unverified |
 | `role` | string | No | Filter by user system role |
 
+### `admin_audit_logs`
+
+List platform audit log entries (create/update/delete/impersonate actions on invoices, clients, companies, users...). SUPER_ADMIN only. Supports excluding known users (e.g. the admin's own account) and system actors so real customer activity stands out.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `page` | number | No | Page number (default: 1) |
+| `limit` | number | No | Items per page (default: 25, max: 100) |
+| `search` | string | No | Partial match on entity type, entity id or user email |
+| `action` | enum(create, update, delete, impersonate) | No | Filter by action |
+| `entityType` | string | No | Filter by entity short name, e.g. `Invoice`, `Client`, `Company`, `User` |
+| `exclude` | string | No | Comma-separated user emails to hide, plus the keyword `system` to hide rows without a user (workers, webhooks, CLI). Example: `contact@example.com,system` |
+
+### `admin_activity`
+
+Per-user platform activity over the last N days, aggregated from the audit log: actions, active days, invoices created, invoices issued, last activity, organizations. SUPER_ADMIN only. Use to find who uses the platform regularly and who issues invoices continuously; sorted by invoices issued, then invoices created and active days.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `days` | number | No | Window in days (default: 30, max: 365) |
+| `limit` | number | No | Max users returned (default: 25, max: 100) |
+| `exclude` | string | No | Comma-separated user emails to leave out, e.g. the admin's own account |
+
 ---
 
 ## Licensing

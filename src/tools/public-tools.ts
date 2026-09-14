@@ -140,9 +140,9 @@ export const tools = [
   },
   {
     name: 'anaf_declaration_status',
-    description: "Processing status of a declaration filed on the ANAF e-guvernare portal (after agent_submit_declaration_pdf or any upload that returned an index): ANAF's public StareD112 by upload index and the taxpayer's CUI/CNP. States: ok (accepted), nok (validation errors, see recipisa), processing, unknown (not indexed yet). Returns the recipisa PDF URL when available. Public, no account.",
-    inputSchema: z.object({ index: z.string().describe('Upload index returned by the portal'), cui: z.string().describe('CUI or CNP the declaration was filed for') }),
-    handler: async (params: Record<string, unknown>): Promise<string> => formatResponse(await apiRequest(`/api/v1/public/declarations/status/${encodeURIComponent(String(params.index))}/${encodeURIComponent(String(params.cui))}`, { noAuth: true })),
+    description: "Processing status of a declaration filed on the ANAF e-guvernare portal (after agent_submit_declaration_pdf or any upload that returned an index): ANAF's public StareD112 by upload index and the taxpayer's CUI/CNP. States: ok (accepted), nok (validation errors, see recipisa), processing, unknown (not indexed yet). Storno asks the three StareD112 hosts in turn (www.anaf.ro, stare.anaf.ro, epatrim.anaf.ro), so an outage of one does not hide the state. Returns the recipisa PDF URL when available. Public, no account.",
+    inputSchema: z.object({ index: z.string().describe('Upload index returned by the portal, or the registration number from the counter (with ghiseu: true)'), cui: z.string().describe('CUI or CNP the declaration was filed for'), ghiseu: z.boolean().optional().describe('true when the number is the registration number given at the ANAF counter, not an online upload index') }),
+    handler: async (params: Record<string, unknown>): Promise<string> => formatResponse(await apiRequest(`/api/v1/public/declarations/status/${encodeURIComponent(String(params.index))}/${encodeURIComponent(String(params.cui))}${params.ghiseu ? '?ghiseu=1' : ''}`, { noAuth: true })),
   },
   {
     name: 'declaration_validate_xml',

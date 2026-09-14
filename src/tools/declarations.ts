@@ -331,13 +331,14 @@ export const tools = [
   },
   {
     name: 'declarations_update',
-    description: 'Update a draft declaration: `data` (for d212 / c168 the form input under data.input and attachments under data.attachments) and/or `metadata`. Only drafts can be edited.',
+    description: 'Update a draft declaration: `data` (for d212 / c168 the form input under data.input and attachments under data.attachments) and/or `metadata`. Only drafts can be edited. With `filedExternally` (any status but submitted/accepted) Storno records a filing made outside it and follows its state.',
     inputSchema: z.object({
       id: z.string().describe('Declaration UUID'),
       data: z.record(z.string(), z.unknown()).optional(),
       metadata: z.record(z.string(), z.unknown()).optional(),
       companyId: z.string().optional().describe('Company UUID (overrides STORNO_COMPANY_ID env var)'),
-    }),
+          filedExternally: z.object({ index: z.string(), ghiseu: z.boolean().optional() }).optional().describe('The declaration was filed outside Storno (portal by hand, another program, at the counter): Storno records ANAF\'s number and follows its state on StareD112; ghiseu: true when the number is the counter registration number'),
+}),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
       const { id, companyId, ...body } = params as Record<string, unknown> & { id: string; companyId?: string };

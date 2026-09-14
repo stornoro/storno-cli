@@ -116,6 +116,72 @@ export const tools = [
   },
 
   {
+    name: 'admin_audit_logs',
+    description:
+      'List platform audit log entries (create/update/delete/impersonate actions on invoices, clients, companies, users...). SUPER_ADMIN only. Supports excluding known users (e.g. the admin\'s own account) and system actors so real customer activity stands out.',
+    inputSchema: z.object({
+      page: z.number().int().positive().optional().describe('Page number (default: 1)'),
+      limit: z.number().int().positive().max(100).optional().describe('Items per page (default: 25, max: 100)'),
+      search: z.string().optional().describe('Partial match on entity type, entity id or user email'),
+      action: z
+        .enum(['create', 'update', 'delete', 'impersonate'])
+        .optional()
+        .describe('Filter by action'),
+      entityType: z
+        .string()
+        .optional()
+        .describe('Filter by entity short name, e.g. Invoice, Client, Company, User'),
+      exclude: z
+        .string()
+        .optional()
+        .describe(
+          'Comma-separated user emails to hide, plus the keyword "system" to hide rows without a user (workers, webhooks, CLI). Example: "contact@example.com,system"'
+        ),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+
+      const { page, limit, search, action, entityType, exclude } = params as {
+        page?: number;
+        limit?: number;
+        search?: string;
+        action?: string;
+        entityType?: string;
+        exclude?: string;
+      };
+
+      const res = await apiRequest('/api/v1/admin/audit-logs', {
+        query: { page, limit, search, action, entityType, exclude },
+      });
+      return formatResponse(res);
+    },
+  },
+
+  {
+    name: 'admin_activity',
+    description:
+      'Per-user platform activity over the last N days, aggregated from the audit log: actions, active days, invoices created, invoices issued, last activity, organizations. SUPER_ADMIN only. Use to find who uses the platform regularly and who issues invoices continuously; sorted by invoices issued, then invoices created and active days.',
+    inputSchema: z.object({
+      days: z.number().int().positive().max(365).optional().describe('Window in days (default: 30, max: 365)'),
+      limit: z.number().int().positive().max(100).optional().describe('Max users returned (default: 25, max: 100)'),
+      exclude: z
+        .string()
+        .optional()
+        .describe('Comma-separated user emails to leave out, e.g. the admin\'s own account'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+
+      const { days, limit, exclude } = params as { days?: number; limit?: number; exclude?: string };
+
+      const res = await apiRequest('/api/v1/admin/activity', {
+        query: { days, limit, exclude },
+      });
+      return formatResponse(res);
+    },
+  },
+
+  {
     name: 'admin_version_overrides',
     description:
       'List the per-platform version-gate overrides for the mobile app. SUPER_ADMIN only. Returns one entry per supported platform (ios/android/huawei) with the deploy-time YAML defaults, the live DB override (if any), and the merged effective values that drive /api/v1/version. Use admin_version_override_update to flip the kill switch.',
