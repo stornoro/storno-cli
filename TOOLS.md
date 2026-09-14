@@ -3361,6 +3361,10 @@ The signature is a PAdES `adbe.pkcs7.detached` signature (SHA-256, the qualified
 
 Standard Romanian legal documents generated from fields, as PDF + HTML (public, nothing stored): `conventie_incetare_inchiriere` (rental termination agreement) and `declaratie_incetare_contract` (locator's sworn statement, the C168 attachment). `document_generate` takes `type`, `fields` and an optional `outFile` to write the PDF locally, ready for hand signing or `agent_sign_pdf`.
 
+### `declaration_form_versions`
+
+ANAF's current version of every form (validator J / PDF P) from DUKIntegrator's manifest, `changedRecently` (forms Storno builds that changed in the last 30 days) and `localOutdated` (validators installed on this server behind ANAF). Public.
+
 ### `declaration_forms` / `declaration_form_spec` / `declaration_build` / `declaration_pdf`
 
 Build an ANAF declaration from plain JSON, the way an assistant works: it reads the user's documents locally, asks Storno for the form specification, fills the input, builds and validates until clean, produces the PDF, then files it through the local agent or hands it to the user for SPV. Public: no account, nothing stored, 60 requests/hour per IP. Forms today: **C168** (registration, amendment, termination of rental contracts; scanned contract as attachment) and **D212** Declarația unică, rent-income scenario (chapter I.1 per contract with 20 % forfait and 10 % tax, obligations summary, CASS on the 6/12/24 minimum-wage thresholds; no attachment). The D212 build returns `info` issues with the amounts due.

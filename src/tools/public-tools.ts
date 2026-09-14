@@ -67,6 +67,13 @@ export const tools = [
     },
   },
   {
+    name: 'declaration_form_versions',
+    description:
+      "ANAF's current version of every declaration form (validator J and PDF P) as DUKIntegrator's own manifest lists them, with what changed lately (changedRecently: forms Storno builds that changed in the last 30 days) and whether this Storno installation's validators lag behind ANAF (localOutdated). Check it before building or filing when a rejection mentions the form version. Public, no account.",
+    inputSchema: z.object({}),
+    handler: async (): Promise<string> => formatResponse(await apiRequest('/api/v1/public/declarations/form-versions', { noAuth: true })),
+  },
+  {
     name: 'declaration_forms',
     description:
       'ANAF declaration forms Storno can build from plain JSON for you (today: C168 rent contract registration/amendment/termination, D212 Declarația unică for rent income with tax and CASS computed). Returns type, title and description of each form. Public, no account.',
