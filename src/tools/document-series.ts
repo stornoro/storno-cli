@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { apiRequest } from '../client.js';
 import { formatResponse, notAuthenticated, noCompanySelected } from '../utils/errors.js';
 import { getConfig } from '../config.js';
@@ -181,6 +183,59 @@ export const tools = [
         companyId,
       });
       return formatResponse(result);
+    },
+  },
+
+  {
+    name: 'document_series_numbering_decision',
+    description:
+      'Decizia de numerotare: the yearly internal decision (OMFP 2634/2015) that names the person responsible for allocating document numbers and lists, per document type, the series and the number range allocated for the year. Built from the company\'s document series: first number = the first number issued in that year (or the next free number), planned last number = first + rangeSize - 1 (extended to the highest number already issued). Returns the decision as JSON (company identification, legal basis, rows with firstNumber/lastNumber/format, warnings for missing representative or registration number); pass outFile to save the signed-ready PDF instead ("DECIZIA nr. … din …", table, signature block, Romanian).',
+    inputSchema: z.object({
+      companyId: z
+        .string()
+        .optional()
+        .describe('Company UUID override (uses active company if not set)'),
+      year: z.number().int().min(2000).max(2100).optional().describe('Year of the decision (default: current year)'),
+      decisionNumber: z.number().int().min(1).optional().describe('Decision number (default 1)'),
+      decisionDate: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional()
+        .describe('Decision date YYYY-MM-DD (default 1 January of the year)'),
+      responsible: z.string().max(200).optional().describe('Person responsible for numbering (default: the company representative)'),
+      rangeSize: z
+        .number()
+        .int()
+        .min(1)
+        .max(9999999)
+        .optional()
+        .describe('Numbers allocated per series; planned last number = first + rangeSize - 1 (default 9999)'),
+      outFile: z.string().optional().describe('Where to write the PDF; when omitted the decision is returned as JSON'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const companyId = getCompanyId(params);
+      if (!companyId) return noCompanySelected();
+
+      const { year, decisionNumber, decisionDate, responsible, rangeSize, outFile } = params as {
+        year?: number;
+        decisionNumber?: number;
+        decisionDate?: string;
+        responsible?: string;
+        rangeSize?: number;
+        outFile?: string;
+      };
+      const query = { year, decisionNumber, decisionDate, responsible, rangeSize };
+
+      if (!outFile) {
+        return formatResponse(await apiRequest('/api/v1/document-series/numbering-decision', { companyId, query }));
+      }
+
+      const res = await apiRequest('/api/v1/document-series/numbering-decision.pdf', { companyId, query, binary: true });
+      if (!res.ok) return formatResponse(res);
+      const out = resolve(outFile);
+      writeFileSync(out, Buffer.isBuffer(res.data) ? res.data : Buffer.from(String(res.data)));
+      return formatResponse({ ok: true, status: 200, data: { file: out, next: 'Print it, have the representative and the responsible person sign it, and keep it with the accounting records.' } });
     },
   },
 ];

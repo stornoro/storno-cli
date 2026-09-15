@@ -53,8 +53,9 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Tax Declarations](#tax-declarations)
 - [SPV Inbox (ANAF documents)](#spv-inbox-anaf-documents)
 - [Fiscal Calendar](#fiscal-calendar)
+- [Partners (verification and rules)](#partners-verification-and-rules)
 
-**Total tools: 250**
+**Total tools: 252**
 
 ---
 
@@ -1397,6 +1398,22 @@ Set a document series as the default for its type. The default series is auto-se
 |------|------|----------|-------------|
 | `uuid` | string | Yes | Document series UUID to set as default |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+### `document_series_numbering_decision`
+
+Decizia de numerotare: the yearly internal decision (OMFP 2634/2015) that names the person responsible for allocating document numbers and lists, per document type, the series and the number range allocated for the year. Built from the company's document series: first number = the first number issued in that year (or the next free number), planned last number = first + rangeSize - 1 (extended to the highest number already issued). Returns the decision as JSON (company identification, legal basis, rows with firstNumber/lastNumber/format, warnings for a missing representative or registration number); pass `outFile` to save the print-ready PDF instead ("DECIZIA nr. … din …", table, signature block, Romanian).
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+| `year` | number | No | Year of the decision (default: current year) |
+| `decisionNumber` | number | No | Decision number (default 1) |
+| `decisionDate` | string | No | Decision date YYYY-MM-DD (default 1 January of the year) |
+| `responsible` | string | No | Person responsible for numbering (default: the company representative) |
+| `rangeSize` | number | No | Numbers allocated per series; planned last number = first + rangeSize - 1 (default 9999) |
+| `outFile` | string | No | Where to write the PDF; when omitted the decision is returned as JSON |
 
 ---
 
@@ -4230,3 +4247,35 @@ Deadlines for the next `days` days (default 60, max 366) from `from` (default to
 - `companyId` (string, optional)
 
 **Returns:** `{ data: [{ code, label, dueDate, nominalDueDate, daysLeft, period: { year, month | quarter, from, to }, appliesBecause, declarationType, status }], counts: { due, overdue, filed }, from, days }`. `status` is `filed` when a submitted / accepted declaration of that type exists for the period, `overdue` when past due without one, `due` otherwise. `declarationType` is what `declarations_create` expects (`null` for SAF-T and the annual statements, filed outside Storno).
+
+---
+
+## Partners (verification and rules)
+
+Partner rules live on the client (`clients_create` / `clients_update`): `status` (`active` | `warning` | `blocked`), `creditLimit` and `affiliated`; suppliers carry `affiliated`. `invoices_issue` refuses a blocked client (422) and returns a `warning` object (`code: credit_limit_exceeded`, `creditLimit`, `outstanding`, `invoiceTotal`, `projected`, `currency`) when the client's outstanding balance plus the invoice would exceed the credit limit — the invoice is still issued.
+
+### `partner_verify`
+
+Check one client or supplier at ANAF (Romanian company with CUI) or VIES (EU partner with a VAT number) and store the snapshot on it: `vatRegistered`, `vatOnCollection` (+ `vatOnCollectionFrom` / `vatOnCollectionTo`), `inactive`, `efacturaRegistered`, `viesValid`, `verificationNotes`, `vatStatusCheckedAt`. Returns the updated partner and `result`: `checked`, `source` (`anaf` | `vies`), `changes` (`became_inactive`, `reactivated`, `lost_vat_registration`, `vat_registered`, `vat_on_collection`, `vat_on_collection_ended`, `vies_invalid`, `vies_valid`) and `error` (`not_applicable` for individuals / non-EU partners, `registry_unavailable` when the registry did not answer — the previous snapshot is kept —, `not_found` when ANAF does not know the CUI). A degrading change sends the `partner.status_changed` notification to the company members. The partner's invoicing settings (`isVatPayer`, `vatCode`) are never changed by a verification. Requires the client-edit permission; throttled per user like the registry lookups.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `type` | string | Yes | `client` or `supplier` |
+| `uuid` | string | Yes | Client or supplier UUID |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+### `partners_verify_all`
+
+Re-check every client and supplier of the company whose last registry check is missing or older than `days` days (default 30; 0 = everyone). Romanian partners go to ANAF in batches of 100, EU partners to VIES one by one; individuals and non-EU partners are skipped. Returns `checked`, `changed`, `failed` (registry did not answer — retried by the daily job), `skipped` and `since`. The same run happens automatically every day at 06:40 for partners older than 30 days.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `days` | number | No | Re-check partners checked more than this many days ago (default 30, 0 = all) |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+---
+

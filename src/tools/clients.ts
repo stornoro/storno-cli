@@ -108,6 +108,9 @@ export const tools = [
       phone: z.string().optional().describe('Client phone number'),
       bankName: z.string().optional().describe('Bank name'),
       bankAccount: z.string().optional().describe('IBAN or bank account number'),
+      status: z.enum(['active', 'warning', 'blocked']).optional().describe('Partner rule: active (default), warning (a notice is shown when the client is picked on an invoice) or blocked (the client cannot be invoiced — issue is refused)'),
+      creditLimit: z.number().min(0).nullable().optional().describe('Partner rule: maximum outstanding balance in the company currency; issuing an invoice that would exceed it returns a `warning` (never a refusal). null removes the limit'),
+      affiliated: z.boolean().optional().describe('Affiliated party — D394 sets prsAfiliat = 1 when an affiliated partner appears on an invoice of the period'),
       defaultPaymentTermDays: z
         .number()
         .int()
@@ -165,6 +168,9 @@ export const tools = [
       phone: z.string().optional().describe('Client phone number'),
       bankName: z.string().optional().describe('Bank name'),
       bankAccount: z.string().optional().describe('IBAN or bank account number'),
+      status: z.enum(['active', 'warning', 'blocked']).optional().describe('Partner rule: active (default), warning (a notice is shown when the client is picked on an invoice) or blocked (the client cannot be invoiced — issue is refused)'),
+      creditLimit: z.number().min(0).nullable().optional().describe('Partner rule: maximum outstanding balance in the company currency; issuing an invoice that would exceed it returns a `warning` (never a refusal). null removes the limit'),
+      affiliated: z.boolean().optional().describe('Affiliated party — D394 sets prsAfiliat = 1 when an affiliated partner appears on an invoice of the period'),
       defaultPaymentTermDays: z
         .number()
         .int()

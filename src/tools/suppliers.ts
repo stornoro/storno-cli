@@ -53,6 +53,7 @@ export const tools = [
       bankName: z.string().optional().describe('Bank name'),
       bankAccount: z.string().optional().describe('Bank account (IBAN)'),
       notes: z.string().optional().describe('Internal notes'),
+      affiliated: z.boolean().optional().describe('Affiliated party — D394 sets prsAfiliat = 1 when an affiliated partner appears on an invoice of the period'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const config = getConfig();

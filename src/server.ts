@@ -67,6 +67,7 @@ import { tools as fiscalCalendarTools } from './tools/fiscal-calendar.js';
 import { tools as clientStatementsTools } from './tools/client-statements.js';
 import { tools as relatedTools } from './tools/related.js';
 import { tools as agentTools } from './tools/agent.js';
+import { tools as partnersTools } from './tools/partners.js';
 
 interface ToolDef {
   name: string;
@@ -130,6 +131,7 @@ const allTools: ToolDef[] = [
   ...clientStatementsTools,
   ...relatedTools,
   ...agentTools,
+  ...partnersTools,
 ];
 
 /** Create a new McpServer with all Storno tools registered. */
