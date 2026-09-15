@@ -13,7 +13,7 @@ export const tools = [
       'List tax declarations for the active company. Supports filtering by type, status, year, and month. Returns paginated list of declarations with their status and period.',
     inputSchema: z.object({
       type: z
-        .enum(['d394', 'd300', 'd390', 'd301', 'd398', 'd100', 'd112'])
+        .enum(['d394', 'd300', 'd390', 'd301', 'd398', 'd406', 'd100', 'd112'])
         .optional()
         .describe('Declaration type filter'),
       status: z
@@ -90,10 +90,10 @@ export const tools = [
   {
     name: 'declarations_create',
     description:
-      "Create a new tax declaration. VAT and payroll types (d394, d300, d390, d100, d112) are auto-populated from the company's invoices for the period; so are 'd301' (decont special de TVA for companies not registered for VAT: purchases from abroad with self-assessed VAT, monthly) and 'd398' (OSS / regimul UE: special-regime art. 314-315 sales to consumers in other member states, quarterly, any month of the quarter). Form-based types are filled from plain JSON: 'd212' (Declarația unică, rent income; month 12) and 'c168' (rental contract registration/amendment/termination; month 12) take `data.input` in the shape of declaration_form_spec, and c168 needs `data.attachments` [{name, contentBase64}] (the scanned contract / termination document) for the PDF. Then declarations_validate → declarations_file_via_agent.",
+      "Create a new tax declaration. VAT and payroll types (d394, d300, d390, d100, d112) are auto-populated from the company's invoices for the period; so are 'd301' (decont special de TVA for companies not registered for VAT: purchases from abroad with self-assessed VAT, monthly) and 'd398' (OSS / regimul UE: special-regime art. 314-315 sales to consumers in other member states, quarterly, any month of the quarter) and 'd406' (SAF-T: the whole audit file — header, accounts, customers / suppliers, tax codes, the ledger derived from the documents and the source documents — for the company's VAT period, `periodType` monthly or quarterly). Form-based types are filled from plain JSON: 'd212' (Declarația unică, rent income; month 12) and 'c168' (rental contract registration/amendment/termination; month 12) take `data.input` in the shape of declaration_form_spec, and c168 needs `data.attachments` [{name, contentBase64}] (the scanned contract / termination document) for the PDF. Then declarations_validate → declarations_file_via_agent.",
     inputSchema: z.object({
       type: z
-        .enum(['d394', 'd300', 'd390', 'd301', 'd398', 'd100', 'd112', 'd212', 'c168'])
+        .enum(['d394', 'd300', 'd390', 'd301', 'd398', 'd406', 'd100', 'd112', 'd212', 'c168'])
         .describe('Declaration type'),
       data: z.record(z.string(), z.unknown()).optional().describe('For d212 / c168: { input: <form input>, attachments?: [{name, contentBase64}] }. Responses return attachments as {name, size, mime, stored} without the content; sending that shape back keeps the stored files'),
       dosarId: z.string().uuid().optional().describe('Attach the new declaration to this dosar'),

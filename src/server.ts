@@ -68,6 +68,7 @@ import { tools as clientStatementsTools } from './tools/client-statements.js';
 import { tools as relatedTools } from './tools/related.js';
 import { tools as agentTools } from './tools/agent.js';
 import { tools as partnersTools } from './tools/partners.js';
+import { tools as fleetTools } from './tools/fleet.js';
 
 interface ToolDef {
   name: string;
@@ -132,13 +133,14 @@ const allTools: ToolDef[] = [
   ...relatedTools,
   ...agentTools,
   ...partnersTools,
+  ...fleetTools,
 ];
 
 /** Create a new McpServer with all Storno tools registered. */
 export function createMcpServer(): McpServer {
   const server = new McpServer({
     name: 'storno',
-    version: '1.0.47',
+    version: '1.0.48',
   });
 
   for (const tool of allTools) {

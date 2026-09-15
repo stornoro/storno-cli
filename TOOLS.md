@@ -54,6 +54,7 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [SPV Inbox (ANAF documents)](#spv-inbox-anaf-documents)
 - [Fiscal Calendar](#fiscal-calendar)
 - [Partners (verification and rules)](#partners-verification-and-rules)
+- [Fleet (parc auto) and expiry alerts](#fleet-parc-auto-and-expiry-alerts)
 
 **Total tools: 252**
 
@@ -3845,7 +3846,7 @@ Delete the custom email sender. Client documents revert to the default Storno ad
 
 ### `import_sources`
 
-Get available import sources and import types. Returns supported sources (SmartBill, Saga, Oblio, FGO, Facturis, etc.) and import types (clients, products, invoices).
+Get available import sources and import types. Returns supported sources (SmartBill, Saga, Oblio, FGO, Facturis, eMag, and the sales sources Uber, Bolt, Glovo, Tazz, WooCommerce, PrestaShop, cash register) and import types (clients, products, invoices, platform_sales, receipts).
 
 **Parameters:**
 
@@ -3885,7 +3886,7 @@ Execute an import job after mapping is confirmed. Runs asynchronously.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `id` | string | Yes | Import job ID |
-| `importOptions` | object | No | Optional import options (e.g., skipDuplicates) |
+| `importOptions` | object | No | `markAsPaid` (invoice imports); `groupBy` = week \| day \| order and `platformName` / `platformCif` / `platformCountry` (platform_sales); `includeAll` for orders that are not paid / completed (WooCommerce, PrestaShop); `cashRegisterName`, `vatGroups` (`{"1": "21", "2": "11", "3": "5", "4": "0"}`) and `paymentTypes` (`{"1": "cash", "3": "card"}`) for receipts |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `import_get`
@@ -3901,15 +3902,17 @@ Get full status and details of an import job including progress and error detail
 
 ### `import_upload`
 
-Upload a file (CSV, XLSX, or XML) to start a new import job. Returns the created job with preview data.
+Upload a file (CSV, XLSX, XML, or ZIP) to start a new import job. Returns the created job with preview data.
+
+Sales sources: a platform statement (`uber`, `bolt`, `glovo`, `tazz`) is uploaded with `importType` `platform_sales` and becomes one sales invoice to the platform per group plus the commission purchase invoice; a shop order export (`woocommerce`, `prestashop`) uses `invoices_issued` and becomes one invoice per order; the A4200 XML a fiscal cash register exports (or a ZIP with a month of them) uses source `cash_register` with `importType` `receipts` and becomes one receipt per bon plus a daily summary on the job.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `filePath` | string | Yes | Absolute path to the file (CSV, XLSX, or XML) |
-| `importType` | string | Yes | Type: clients, products, invoices_issued, invoices_received, recurring_invoices |
-| `source` | string | Yes | Source app: smartbill, saga, oblio, fgo, facturis_online, easybill, ciel, factureaza, facturare_pro, icefact, bolt, facturis, emag, generic |
+| `filePath` | string | Yes | Absolute path to the file (CSV, XLSX, XML, or a ZIP of A4200 XML files) |
+| `importType` | string | Yes | Type: clients, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts |
+| `source` | string | Yes | Source app: smartbill, saga, oblio, fgo, facturis_online, easybill, ciel, factureaza, facturare_pro, icefact, bolt, facturis, emag, uber, glovo, tazz, woocommerce, prestashop, cash_register, generic |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `import_template`
@@ -3920,7 +3923,19 @@ Download a CSV template for a specific import type. Returns base64-encoded CSV.
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `importType` | string | Yes | Type: clients, products, invoices_issued, invoices_received, recurring_invoices |
+| `importType` | string | Yes | Type: clients, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts |
+| `source` | string | No | Platform / shop whose column layout the template should use: uber, bolt, glovo, tazz, woocommerce, prestashop |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+### `import_revert`
+
+Revert a completed or cancelled import job: deletes every record it created (invoices and their lines, receipts, clients, payments) and marks the job as reverted.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `id` | string | Yes | Import job ID |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `import_history`
@@ -4018,13 +4033,13 @@ Get a single tax declaration by UUID. Returns full details including populated d
 
 ### `declarations_create`
 
-Create a new tax declaration and auto-populate from existing invoice data. Aggregates invoices by partner CIF and VAT rate. `d301` (decont special de TVA, companies not registered for VAT; purchases from abroad with self-assessed VAT, monthly) and `d398` (OSS, regimul UE; special-regime art. 314–315 sales to consumers in other member states, quarterly — pass any month of the quarter) are populated from invoices too; `data.warnings` lists the missing prerequisites.
+Create a new tax declaration and auto-populate from existing invoice data. Aggregates invoices by partner CIF and VAT rate. `d301` (decont special de TVA, companies not registered for VAT; purchases from abroad with self-assessed VAT, monthly) and `d398` (OSS, regimul UE; special-regime art. 314–315 sales to consumers in other member states, quarterly — pass any month of the quarter) are populated from invoices too; `data.warnings` lists the missing prerequisites. `d406` (SAF-T) builds the whole audit file — header, chart of accounts, customers / suppliers, tax codes, the ledger derived from the documents and the source documents — for the company's VAT period (`periodType` monthly or quarterly); `data.warnings` names what an accountant still has to add (opening balances, entries without a document, stock, fixed assets).
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `type` | string | Yes | Declaration type (d394, d300, d390, d301, d398, d100, d112, d212, c168) |
+| `type` | string | Yes | Declaration type (d394, d300, d390, d301, d398, d406, d100, d112, d212, c168) |
 | `year` | number | Yes | Declaration year (e.g. 2026) |
 | `month` | number | Yes | Declaration month (1–12) |
 | `periodType` | string | No | Period type (default: "monthly") |
@@ -4232,7 +4247,7 @@ The filing deadlines a company has to meet, derived from its profile — `vatPay
 | D301 | non-VAT payer with foreign supplier invoices in the month | 25th of the next month |
 | D100 | company, per `incomeTaxPeriod` (quarterly by default) | 25th of the month after the period |
 | D112 | `hasEmployees` | 25th of the next month |
-| D406 (SAF-T) | company; VAT period, quarterly without VAT registration | last day of the month after the period |
+| D406 (SAF-T, generated in Storno) | company; VAT period, quarterly without VAT registration | last day of the month after the period |
 | D212 | individual | 25 May for the previous year |
 | BILANT | company | last working day of May for the previous year |
 
@@ -4246,7 +4261,7 @@ Deadlines for the next `days` days (default 60, max 366) from `from` (default to
 - `allCompanies` (boolean, optional): every company the user can see, each item carrying `company {id, name, cif}` — the accountant view
 - `companyId` (string, optional)
 
-**Returns:** `{ data: [{ code, label, dueDate, nominalDueDate, daysLeft, period: { year, month | quarter, from, to }, appliesBecause, declarationType, status }], counts: { due, overdue, filed }, from, days }`. `status` is `filed` when a submitted / accepted declaration of that type exists for the period, `overdue` when past due without one, `due` otherwise. `declarationType` is what `declarations_create` expects (`null` for SAF-T and the annual statements, filed outside Storno).
+**Returns:** `{ data: [{ code, label, dueDate, nominalDueDate, daysLeft, period: { year, month | quarter, from, to }, appliesBecause, declarationType, status }], counts: { due, overdue, filed }, from, days }`. `status` is `filed` when a submitted / accepted declaration of that type exists for the period, `overdue` when past due without one, `due` otherwise. `declarationType` is what `declarations_create` expects (`d406` for SAF-T, which Storno generates too; `null` only for the annual statements and the contract-end reminder, which are not filed from Storno).
 
 ---
 
@@ -4276,6 +4291,139 @@ Re-check every client and supplier of the company whose last registry check is m
 |------|------|----------|-------------|
 | `days` | number | No | Re-check partners checked more than this many days ago (default 30, 0 = all) |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+---
+
+## Fleet (parc auto) and expiry alerts
+
+The company's vehicles and everything with an expiry date the company must renew: vehicle documents — RCA, ITP, rovinietă, CASCO, tahograf (calibration), extinctor, trusă medicală, licență de transport, copie conformă, leasing end — and company-level items (certificat digital, contract, autorizație, other). An item carries `expiresAt`, `daysLeft`, `status` (`ok`, `due` when inside `remindDaysBefore`, `expired`, `renewed` once closed) and, when it belongs to a vehicle, `vehicle {id, plate, displayName}`. Members receive the `expiry.due` notification (e-mail, in-app, push by default) `remindDaysBefore` days before (30 by default), then 7 and 1 days before and on the day — each once; changing the date restarts them, expired items are not nagged daily. Renewing creates the next item and closes the old one, kept as history (`renewedFromId`). Reading needs the settings-view permission, writing settings-manage.
+
+### `vehicles_list`
+
+Vehicles of the company with, per vehicle, `nextExpiry` (the soonest open item) and `counts {expired, due, ok}`.
+
+**Parameters:**
+- `active` (boolean, optional): only active (`true`) or only inactive (`false`) vehicles
+- `search` (string, optional): plate, make, model, driver or VIN
+- `companyId` (string, optional)
+
+**Returns:** `{ data: [{ id, plate, vin, make, model, year, fuel, ownership, driverName, active, displayName, … }], expiries: { <vehicleId>: { nextExpiry, counts } }, total, ownerships, fuels }`.
+
+### `vehicles_get`
+
+One vehicle with its open expiry items, `counts` and `nextExpiry`.
+
+**Parameters:**
+- `uuid` (string, required): vehicle UUID
+- `companyId` (string, optional)
+
+### `vehicles_create`
+
+Add a vehicle; the plate is normalised to upper case.
+
+**Parameters:**
+- `plate` (string, required): e.g. `B 123 ABC`
+- `vin`, `make`, `model` (string, optional); `year` (number, optional)
+- `fuel` (string, optional): `benzina`, `motorina`, `gpl`, `hibrid`, `electric`, `altul`
+- `ownership` (string, optional): `own` (default), `leasing`, `rented`
+- `driverName`, `notes` (string, optional)
+- `companyId` (string, optional)
+
+**Returns:** `{ vehicle, expiries: [], counts, nextExpiry }`.
+
+### `vehicles_update`
+
+Update a vehicle: any field of `vehicles_create` (send `null` to clear an optional one) plus `active` (`false` archives a vehicle that left the fleet).
+
+**Parameters:**
+- `uuid` (string, required)
+- the fields above, all optional
+- `companyId` (string, optional)
+
+### `vehicles_delete`
+
+Delete a vehicle and all its expiry items (history included). Prefer `vehicles_update` with `active=false` for a vehicle that was sold or returned.
+
+**Parameters:**
+- `uuid` (string, required)
+- `companyId` (string, optional)
+
+### `expiries_list`
+
+Expiry items of the company, soonest first (expired ones first).
+
+**Parameters:**
+- `kind` (string, optional): `rca`, `itp`, `rovinieta`, `casco`, `tahograf`, `extinctor`, `trusa_medicala`, `licenta_transport`, `copie_conforma`, `leasing`, `certificat_digital`, `contract`, `autorizatie`, `other`
+- `vehicleId` (string, optional): one vehicle's items
+- `companyLevel` (boolean, optional): only items without a vehicle
+- `includeClosed` (boolean, optional): include renewed / closed items (the history)
+- `companyId` (string, optional)
+
+**Returns:** `{ data: [{ id, kind, label, number, provider, validFrom, expiresAt, remindDaysBefore, daysLeft, status, vehicleId, vehicle, renewedFromId, closedAt, notes, … }], counts: { total, expired, due, ok }, total, kinds }`.
+
+### `expiries_upcoming`
+
+What expires in the next `days` days (default 60, max 730), already expired items included, as flat rows — the same list the dashboard card shows.
+
+**Parameters:**
+- `days` (number, optional)
+- `companyId` (string, optional)
+
+**Returns:** `{ data: [{ id, kind, label, number, provider, validFrom, expiresAt, daysLeft, status, remindDaysBefore, vehicleId, vehicle, notes }], counts: { total, expired, due, ok }, days }`.
+
+### `expiries_create`
+
+Record something with an expiry date, on a vehicle (`vehicleId`) or at company level.
+
+**Parameters:**
+- `kind` (string, required): see `expiries_list`
+- `expiresAt` (string, required): `YYYY-MM-DD`
+- `vehicleId` (string, optional)
+- `label` (string, optional): default the kind's name (e.g. "RCA")
+- `number`, `provider`, `validFrom`, `notes` (optional)
+- `remindDaysBefore` (number, optional): first reminder this many days before (default 30)
+- `companyId` (string, optional)
+
+**Returns:** the item.
+
+### `expiries_get`
+
+One item with `history`: the items it renewed, newest first.
+
+**Parameters:**
+- `uuid` (string, required)
+- `companyId` (string, optional)
+
+### `expiries_update`
+
+Update an item. Changing `expiresAt` restarts the reminders; `vehicleId: null` detaches it; `closed: true` closes it by hand without creating the next one.
+
+**Parameters:**
+- `uuid` (string, required)
+- any field of `expiries_create`, plus `closed` (boolean), all optional
+- `companyId` (string, optional)
+
+**Returns:** `{ item, history }`.
+
+### `expiries_renew`
+
+Create the next item (same kind, label, vehicle, provider and reminder setting) and close the old one. Without `expiresAt` the kind's usual validity is added to the old expiry — RCA, rovinietă, CASCO, extinctor, certificat digital, autorizație 12 months; ITP, tahograf 24; trusă medicală 36; licență / copie conformă 120 — counted from today when it had already expired. `validFrom` defaults to the old expiry (or today).
+
+**Parameters:**
+- `uuid` (string, required): the item to renew
+- `expiresAt`, `validFrom` (string, optional): `YYYY-MM-DD`
+- `number`, `provider`, `notes` (string, optional)
+- `companyId` (string, optional)
+
+**Returns:** `{ item, previous }` — the new item and the closed one.
+
+### `expiries_delete`
+
+Delete an item. To keep the history, renew or close it instead.
+
+**Parameters:**
+- `uuid` (string, required)
+- `companyId` (string, optional)
 
 ---
 
