@@ -95,7 +95,7 @@ export const tools = [
       type: z
         .enum(['d394', 'd300', 'd390', 'd301', 'd398', 'd100', 'd112', 'd212', 'c168'])
         .describe('Declaration type'),
-      data: z.record(z.string(), z.unknown()).optional().describe('For d212 / c168: { input: <form input>, attachments?: [{name, contentBase64}] }'),
+      data: z.record(z.string(), z.unknown()).optional().describe('For d212 / c168: { input: <form input>, attachments?: [{name, contentBase64}] }. Responses return attachments as {name, size, mime, stored} without the content; sending that shape back keeps the stored files'),
       dosarId: z.string().uuid().optional().describe('Attach the new declaration to this dosar'),
       year: z
         .number()
