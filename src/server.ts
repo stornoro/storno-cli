@@ -69,6 +69,7 @@ import { tools as relatedTools } from './tools/related.js';
 import { tools as agentTools } from './tools/agent.js';
 import { tools as partnersTools } from './tools/partners.js';
 import { tools as fleetTools } from './tools/fleet.js';
+import { tools as integrationsTools } from './tools/integrations.js';
 
 interface ToolDef {
   name: string;
@@ -134,6 +135,7 @@ const allTools: ToolDef[] = [
   ...agentTools,
   ...partnersTools,
   ...fleetTools,
+  ...integrationsTools,
 ];
 
 /** Create a new McpServer with all Storno tools registered. */

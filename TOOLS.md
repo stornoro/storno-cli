@@ -55,8 +55,9 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Fiscal Calendar](#fiscal-calendar)
 - [Partners (verification and rules)](#partners-verification-and-rules)
 - [Fleet (parc auto) and expiry alerts](#fleet-parc-auto-and-expiry-alerts)
+- [Integrations (partner platforms)](#integrations-partner-platforms)
 
-**Total tools: 252**
+**Total tools: 367**
 
 ---
 
@@ -4427,3 +4428,38 @@ Delete an item. To keep the history, renew or close it instead.
 
 ---
 
+## Integrations (partner platforms)
+
+Endpoints for other platforms that integrate with Storno, not for a company's own
+data. They authenticate with a shared integration key instead of a user token, and
+answer the minimum the caller needs to decide something on its own side.
+
+Note the word: "Partners" elsewhere in this document means a company's clients and
+suppliers. These are integration partners — other platforms — which is a different
+thing entirely.
+
+### `integration_invoicing_activity`
+
+Check whether a fiscal code (CUI/CIF) invoices through Storno, and how many invoices
+it issued recently. Built for platforms that give their users a benefit for invoicing
+here, so it is NOT authenticated with your user token — the credential is a shared
+integration key, configured server-side as `INTEGRATION_API_KEY`.
+
+Returns only `{ active, invoicesLast30d, windowDays, invoicesInWindow }`: no company
+name, no amounts, no clients. Counts issued outgoing invoices only — drafts, cancelled
+and rejected ones do not count, so a company cannot earn a benefit by issuing and
+voiding. Returns `active: false` for an unknown fiscal code and for a suspended
+organization alike, so a caller cannot tell the two apart.
+
+If the server has no key configured the endpoint answers 404 ("not enabled"); a wrong
+key answers 401, identically whatever the fiscal code is.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `cui` | string | Yes | Fiscal code to look up. Written however you have it — "RO12345678", "12345678", spaced or dotted are all accepted |
+| `integrationKey` | string | No | The shared integration key. Falls back to the `STORNO_INTEGRATION_KEY` environment variable when omitted |
+| `window` | number | No | How many days back to count, 1-365 (default 30). The 30-day figure is reported as `invoicesLast30d` regardless |
+
+---
