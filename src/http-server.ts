@@ -21,9 +21,13 @@ import { LOGO_PNG_BASE64 } from './logo-asset.js';
 interface Session {
   transport: StreamableHTTPServerTransport;
   token?: string;
+  lastSeen: number;
 }
 
 const sessions = new Map<string, Session>();
+
+/** Drop sessions nobody has touched in this long (ms). */
+const SESSION_IDLE_TTL = 6 * 60 * 60 * 1000;
 
 function setCorsHeaders(res: ServerResponse): void {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -59,6 +63,23 @@ function extractBearerToken(req: IncomingMessage): string | undefined {
     return auth.slice(7);
   }
   return undefined;
+}
+
+/**
+ * True when the token is a JWT whose `exp` has passed.
+ * API keys and anything unparseable are treated as still valid — only the
+ * backend can judge those.
+ */
+function isExpiredJwt(token: string): boolean {
+  const parts = token.split('.');
+  if (parts.length !== 3) return false;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString()) as { exp?: number };
+    if (typeof payload.exp !== 'number') return false;
+    return payload.exp * 1000 <= Date.now();
+  } catch {
+    return false;
+  }
 }
 
 /** Set req.auth so the MCP SDK passes it as extra.authInfo to tool callbacks. */
@@ -98,9 +119,25 @@ async function handlePost(req: IncomingMessage, res: ServerResponse): Promise<vo
   const bearerToken = extractBearerToken(req);
 
   if (sessionId && sessions.has(sessionId)) {
-    // Existing session — set req.auth from stored token and forward
+    // Existing session — the client refreshes its OAuth2 token on its own
+    // schedule, so the Authorization header of *this* request wins over the
+    // token captured at initialize. Without this the session keeps replaying a
+    // token that died an hour ago and every tool call answers 401.
     const session = sessions.get(sessionId)!;
+    if (bearerToken) {
+      session.token = bearerToken;
+    }
+    session.lastSeen = Date.now();
+
     if (session.token) {
+      // Tell the client to refresh instead of letting the API answer 401 inside
+      // a 200 JSON-RPC envelope, which no MCP client knows how to recover from.
+      if (isExpiredJwt(session.token)) {
+        jsonError(res, 401, -32001, 'Access token expired', {
+          'WWW-Authenticate': wwwAuthenticateHeader(req),
+        });
+        return;
+      }
       setReqAuth(req, session.token);
     }
     await session.transport.handleRequest(req, res, body);
@@ -120,7 +157,7 @@ async function handlePost(req: IncomingMessage, res: ServerResponse): Promise<vo
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (sid) => {
-        sessions.set(sid, { transport, token: bearerToken });
+        sessions.set(sid, { transport, token: bearerToken, lastSeen: Date.now() });
       },
     });
 
@@ -150,6 +187,11 @@ async function handleGet(req: IncomingMessage, res: ServerResponse): Promise<voi
     return;
   }
   const session = sessions.get(sessionId)!;
+  const bearerToken = extractBearerToken(req);
+  if (bearerToken) {
+    session.token = bearerToken;
+  }
+  session.lastSeen = Date.now();
   if (session.token) {
     setReqAuth(req, session.token);
   }
@@ -163,6 +205,7 @@ async function handleDelete(req: IncomingMessage, res: ServerResponse): Promise<
     return;
   }
   const session = sessions.get(sessionId)!;
+  session.lastSeen = Date.now();
   await session.transport.handleRequest(req, res);
 }
 
@@ -332,7 +375,7 @@ export function startHttpServer(port: number, host: string): void {
     if (url.pathname === '/api/status' && req.method === 'GET') {
       const status = {
         server: 'storno-mcp',
-        version: '1.0.48',
+        version: '1.0.49',
         activeSessions: sessions.size,
         uptime: process.uptime(),
       };
@@ -392,6 +435,18 @@ export function startHttpServer(port: number, host: string): void {
   server.listen(port, host, () => {
     console.error(`Storno MCP HTTP server listening on http://${host}:${port}/mcp`);
   });
+
+  // Clients rarely send DELETE, so without this sweep the map only ever grows.
+  const sweeper = setInterval(() => {
+    const cutoff = Date.now() - SESSION_IDLE_TTL;
+    for (const [sessionId, session] of sessions) {
+      if (session.lastSeen < cutoff) {
+        sessions.delete(sessionId);
+        session.transport.close().catch(() => {});
+      }
+    }
+  }, 15 * 60 * 1000);
+  sweeper.unref();
 
   // Graceful shutdown
   const shutdown = async () => {
