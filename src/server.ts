@@ -64,6 +64,7 @@ import { tools as declarationsTools } from './tools/declarations.js';
 import { tools as spvTools } from './tools/spv.js';
 import { tools as dosareTools } from './tools/dosare.js';
 import { tools as fiscalCalendarTools } from './tools/fiscal-calendar.js';
+import { tools as calendarFeedTools } from './tools/calendar-feed.js';
 import { tools as clientStatementsTools } from './tools/client-statements.js';
 import { tools as relatedTools } from './tools/related.js';
 import { tools as agentTools } from './tools/agent.js';
@@ -130,6 +131,7 @@ const allTools: ToolDef[] = [
   ...spvTools,
   ...dosareTools,
   ...fiscalCalendarTools,
+  ...calendarFeedTools,
   ...clientStatementsTools,
   ...relatedTools,
   ...agentTools,

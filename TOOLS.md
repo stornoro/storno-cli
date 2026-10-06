@@ -55,6 +55,7 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Fiscal Calendar](#fiscal-calendar)
 - [Partners (verification and rules)](#partners-verification-and-rules)
 - [Fleet (parc auto) and expiry alerts](#fleet-parc-auto-and-expiry-alerts)
+- [Calendar subscription](#calendar-subscription)
 - [Integrations (partner platforms)](#integrations-partner-platforms)
 
 **Total tools: 367**
@@ -4425,6 +4426,53 @@ Delete an item. To keep the history, renew or close it instead.
 **Parameters:**
 - `uuid` (string, required)
 - `companyId` (string, optional)
+
+---
+
+## Calendar subscription
+
+A personal iCalendar link per user and organization with the expiries (vehicle documents, contracts, certificates) and the fiscal deadlines of the companies the user can see. It is added once to Apple Calendar (`webcalUrl` opens the Subscribe sheet on iPhone and macOS), Google Calendar or Outlook, and the calendar app refreshes it by itself: a renewed item moves to its new date, a filed declaration drops out, a company the user loses access to disappears. Events are all-day, with alarms at 09:00: an expiry at its `remindDaysBefore` threshold and the day before, a fiscal deadline 3 days and 1 day before. Expiries need the `settings.view` permission and fiscal deadlines `declaration.view`.
+
+The link is the credential: anyone holding it can read the deadlines, so show it only to the user. No secret is stored server side (the link is signed), so `calendar_feed_get` can show the same link again; `calendar_feed_enable` with `regenerate: true` issues a new one and every older link stops working.
+
+### `calendar_feed_get`
+
+The user's subscription in the current organization.
+
+**Returns:** `{ enabled: true, url, webcalUrl, googleCalendarUrl, outlookUrl, includeExpiries, includeFiscal, canSeeExpiries, canSeeFiscal, createdAt, lastFetchedAt }`, or `{ enabled: false, canSeeExpiries, canSeeFiscal }` when it is off.
+
+---
+
+### `calendar_feed_enable`
+
+Turns the subscription on. Idempotent: an existing subscription keeps its link.
+
+**Parameters:**
+- `regenerate` (boolean, optional): issue a new link; the old one stops working
+- `includeExpiries` (boolean, optional): include expiries (default true)
+- `includeFiscal` (boolean, optional): include fiscal deadlines (default true)
+
+**Returns:** the subscription, as `calendar_feed_get`.
+
+---
+
+### `calendar_feed_update`
+
+Changes what the subscription contains. Fails with `NOT_ENABLED` when it is off.
+
+**Parameters:**
+- `includeExpiries` (boolean, optional)
+- `includeFiscal` (boolean, optional)
+
+**Returns:** the subscription, as `calendar_feed_get`.
+
+---
+
+### `calendar_feed_disable`
+
+Turns the subscription off: every link stops working and subscribed calendars stop updating.
+
+**Returns:** `{ enabled: false }`
 
 ---
 
