@@ -7,7 +7,7 @@ import { getConfig } from '../config.js';
 const FREQUENCIES = ['once', 'weekly', 'monthly', 'bimonthly', 'quarterly', 'semi_annually', 'yearly'] as const;
 const DUE_DATE_TYPES = ['days', 'fixed_day'] as const;
 const DOCUMENT_TYPES = ['invoice', 'credit_note', 'proforma'] as const;
-const PRICE_RULES = ['fixed', 'updated_product', 'bnr_rate', 'bnr_rate_markup'] as const;
+const PRICE_RULES = ['fixed', 'updated_product', 'bnr_rate', 'bnr_rate_markup', 'expression'] as const;
 const INVOICE_TYPE_CODES = [
   'standard',
   'reverse_charge',
@@ -35,8 +35,12 @@ const recurringLineItemSchema = z.object({
     .enum(PRICE_RULES)
     .optional()
     .describe(
-      'Pricing rule. fixed: unitPrice as-is. updated_product: refresh from linked product on each issuance. bnr_rate: convert from referenceCurrency at BNR rate. bnr_rate_markup: same as bnr_rate plus markupPercent.'
+      'Pricing rule. fixed: unitPrice as-is. updated_product: refresh from linked product on each issuance. bnr_rate: convert from referenceCurrency at BNR rate. bnr_rate_markup: same as bnr_rate plus markupPercent. expression: unitPrice computed at issuance from priceExpression (document currency), e.g. "2000*curs - rata".'
     ),
+  priceExpression: z
+    .string()
+    .optional()
+    .describe('With priceRule=expression: the unit price in the document currency computed at issuance, e.g. "2000*curs - rata" (2,000 EUR at the BNR rate minus what this issuance deducts from the running balance). Names: curs, curs_EUR…, rata, sold, sold_anterior, luna_nr, an. Negative results become 0.'),
   referenceCurrency: z
     .string()
     .optional()

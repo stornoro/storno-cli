@@ -1650,7 +1650,7 @@ Notes and line descriptions of a template are rendered on every issuance:
 | `[[suma:EXPR]]` | an amount computed from `EXPR`, e.g. `[[suma:1900*curs]]`; names: `curs` (rate of the first reference currency of the lines, EUR otherwise), `curs_EUR`, `curs_USD`…, `sold`, `sold_anterior`, `rata`, `luna_nr`, `an`; `+ - * /` and parentheses |
 | `[[sold]]`, `[[sold_anterior]]`, `[[rata]]` | with a running `balance`: what is left after this invoice, what there was before, what this invoice deducts |
 
-Amounts print in Romanian format (`9.633,00`). A reduction that must also lower the invoice total goes on the line as a fixed `discount` (converted with the line's `referenceCurrency`), the note only explains it.
+Amounts print in Romanian format (`9.633,00`). A line with `priceRule: expression` and `priceExpression` (same names, document currency) gets its unit price computed the same way: a rent reduced by the balance pays `2000*curs - rata`, so the last month settles exactly what is left. A fixed line `discount` converted with the line's `referenceCurrency` works too while the balance is larger than the step.
 
 ### `recurring_invoices_create`
 
