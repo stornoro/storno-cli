@@ -127,8 +127,10 @@ export const tools = [
         .number()
         .optional()
         .describe('Fixed day of month for due date (1-31, required if dueDateType is fixed_day)'),
-      notes: z.string().optional().describe('Internal notes'),
+      notes: z.string().optional().describe('Notes printed on every generated document. Placeholders: [[luna]], [[luna±N]], [[an]], [[an±N]], [[luna_nr]], [[curs]] (the BNR rate note), [[suma:EXPR]] (an amount computed from EXPR, e.g. [[suma:1900*curs]] = 1,900 EUR at the BNR rate of the issue date; names: curs, curs_EUR, curs_USD…, sold, sold_anterior, rata), and with a running balance: [[sold]] (left after this invoice), [[sold_anterior]] (before), [[rata]] (deducted now). Amounts print in Romanian format (9.633,00).'),
       paymentTerms: z.string().optional().describe('Payment terms text'),
+      balance: z.union([z.number(), z.string()]).nullable().optional().describe('Running balance in RON (e.g. an investment recovered through rent reductions). Reduced on every issuance by balanceStep; printed with [[sold]]. The template pauses when it reaches zero.'),
+      balanceStep: z.string().nullable().optional().describe('Expression deducted from balance per issuance, e.g. "1900*curs" (1,900 EUR at the BNR rate of the issue date). Names: curs, curs_EUR…, sold_anterior. The last deduction is capped at what is left.'),
       autoEmailEnabled: z.boolean().optional().describe('Auto-send email on invoice generation (default: false)'),
       autoEmailTime: z.string().optional().describe('Time to send email (HH:mm, default: "09:00")'),
       autoEmailDayOffset: z.number().optional().describe('Days offset for email sending (default: 0)'),
@@ -177,8 +179,10 @@ export const tools = [
       dueDateType: z.enum(DUE_DATE_TYPES).optional().describe('How due date is calculated. days = N days after issue. fixed_day = fixed day of month.'),
       dueDateDays: z.number().optional().describe('Days after issue date for due date'),
       dueDateFixedDay: z.number().optional().describe('Fixed day of month for due date (1-31)'),
-      notes: z.string().nullable().optional().describe('Internal notes'),
+      notes: z.string().nullable().optional().describe('Notes printed on every generated document; same placeholders as recurring_invoices_create ([[luna]], [[an]], [[curs]], [[suma:EXPR]], [[sold]], [[sold_anterior]], [[rata]])'),
       paymentTerms: z.string().nullable().optional().describe('Payment terms text'),
+      balance: z.union([z.number(), z.string()]).nullable().optional().describe('Running balance in RON (null removes it); see recurring_invoices_create'),
+      balanceStep: z.string().nullable().optional().describe('Expression deducted from balance per issuance, e.g. "1900*curs"; null removes it'),
       autoEmailEnabled: z.boolean().optional().describe('Auto-send email on invoice generation'),
       autoEmailTime: z.string().optional().describe('Time to send email (HH:mm)'),
       autoEmailDayOffset: z.number().optional().describe('Days offset for email sending'),

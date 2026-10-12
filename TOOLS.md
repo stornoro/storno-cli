@@ -1638,6 +1638,20 @@ Get detailed information about a specific recurring invoice template including a
 | `uuid` | string | Yes | UUID of the recurring invoice template |
 | `companyId` | string | No | Company UUID (overrides configured default) |
 
+### Template placeholders
+
+Notes and line descriptions of a template are rendered on every issuance:
+
+| Placeholder | Value |
+|---|---|
+| `[[luna]]`, `[[luna-1]]`, `[[luna+1]]` | the month in Romanian, with an offset |
+| `[[luna_nr]]`, `[[an]]` (± N) | month number, year |
+| `[[curs]]` | the BNR rate note of the issue date for every currency used (`Curs BNR 20.10.2026: 1 EUR = 5.0700 RON`) |
+| `[[suma:EXPR]]` | an amount computed from `EXPR`, e.g. `[[suma:1900*curs]]`; names: `curs` (rate of the first reference currency of the lines, EUR otherwise), `curs_EUR`, `curs_USD`…, `sold`, `sold_anterior`, `rata`, `luna_nr`, `an`; `+ - * /` and parentheses |
+| `[[sold]]`, `[[sold_anterior]]`, `[[rata]]` | with a running `balance`: what is left after this invoice, what there was before, what this invoice deducts |
+
+Amounts print in Romanian format (`9.633,00`). A reduction that must also lower the invoice total goes on the line as a fixed `discount` (converted with the line's `referenceCurrency`), the note only explains it.
+
 ### `recurring_invoices_create`
 
 Create a new recurring invoice template. The system will automatically generate invoices based on the specified frequency and schedule. Supports fixed, exchange_rate, and markup pricing rules on line items.
@@ -1661,8 +1675,10 @@ Create a new recurring invoice template. The system will automatically generate 
 | `dueDateType` | enum(fixed, relative) | Yes | How due date is calculated |
 | `dueDateDays` | number | No | Days after issue date for due date (required if dueDateType is relative) |
 | `dueDateFixedDay` | number | No | Fixed day of month for due date (1-31, required if dueDateType is fixed) |
-| `notes` | string | No | Internal notes |
+| `notes` | string | No | Notes printed on every generated document; supports the placeholders above |
 | `paymentTerms` | string | No | Payment terms text |
+| `balance` | number | No | Running balance in RON, reduced on every issuance by `balanceStep` and printed with `[[sold]]`; the template pauses at zero |
+| `balanceStep` | string | No | Expression deducted per issuance, e.g. `1900*curs` (1,900 EUR at the BNR rate of the issue date); the last deduction is capped at what is left |
 | `autoEmailEnabled` | boolean | No | Auto-send email on invoice generation (default: false) |
 | `autoEmailTime` | string | No | Time to send email (HH:mm, default: "09:00") |
 | `autoEmailDayOffset` | number | No | Days offset for email sending (default: 0) |
@@ -1695,7 +1711,9 @@ Update an existing recurring invoice template. All fields are optional but at le
 | `dueDateType` | enum(fixed, relative) | No | How due date is calculated |
 | `dueDateDays` | number | No | Days after issue date for due date |
 | `dueDateFixedDay` | number | No | Fixed day of month for due date (1-31) |
-| `notes` | nullable string | No | Internal notes |
+| `notes` | nullable string | No | Notes with the placeholders above |
+| `balance` | nullable number | No | Running balance in RON (null removes it) |
+| `balanceStep` | nullable string | No | Expression deducted per issuance, e.g. `1900*curs` (null removes it) |
 | `paymentTerms` | nullable string | No | Payment terms text |
 | `autoEmailEnabled` | boolean | No | Auto-send email on invoice generation |
 | `autoEmailTime` | string | No | Time to send email (HH:mm) |
