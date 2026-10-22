@@ -58,7 +58,7 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Calendar subscription](#calendar-subscription)
 - [Integrations (partner platforms)](#integrations-partner-platforms)
 
-**Total tools: 367**
+**Total tools: 368**
 
 ---
 
@@ -3103,6 +3103,18 @@ Generate a detailed VAT (TVA) report for a specific month. Returns a summary of 
 |------|------|----------|-------------|
 | `year` | number | Yes | Report year (e.g. 2026) |
 | `month` | number | Yes | Report month (1–12) |
+| `companyId` | string | No | Company UUID (overrides STORNO_COMPANY_ID env var) |
+
+### `reports_vat_oss`
+
+Quarterly OSS (One Stop Shop, EU special scheme) view of the VAT: VAT charged to consumers in other EU member states, grouped by state of consumption, rate and invoice currency, converted to EUR at the ECB rate of the last day of the quarter (the D398 rule). Returns the payment due date (end of the month after the quarter), the unique reference `RO/<vatCode>/Q<n>.<year>` and the ANAF OSS account. EUR amounts are null while the quarter is still running (no ECB rate yet).
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `year` | number | Yes | Report year (e.g. 2026) |
+| `quarter` | number | Yes | Quarter (1–4) |
 | `companyId` | string | No | Company UUID (overrides STORNO_COMPANY_ID env var) |
 
 ### `reports_sales_analysis`

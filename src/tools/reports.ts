@@ -45,6 +45,29 @@ export const tools = [
     },
   },
   {
+    name: 'reports_vat_oss',
+    description:
+      'Quarterly OSS (One Stop Shop, EU special scheme) view of the VAT: VAT charged to consumers in other EU member states, grouped by state of consumption, rate and invoice currency, converted to EUR at the ECB rate of the last day of the quarter (the D398 rule). Returns the payment due date (end of the month after the quarter), the unique reference RO/<vatCode>/Q<n>.<year> and the ANAF OSS account. EUR amounts are null while the quarter is still running (no ECB rate yet).',
+    inputSchema: z.object({
+      year: z.number().int().min(2000).max(2100).describe('Report year (e.g. 2026)'),
+      quarter: z.number().int().min(1).max(4).describe('Quarter (1–4)'),
+      companyId: z.string().optional().describe('Company UUID (overrides STORNO_COMPANY_ID env var)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+
+      const { year, quarter, companyId } = params as { year: number; quarter: number; companyId?: string };
+      const effectiveCompanyId = companyId || getConfig().companyId;
+      if (!effectiveCompanyId) return noCompanySelected();
+
+      const res = await apiRequest('/api/v1/reports/vat/oss', {
+        companyId: effectiveCompanyId,
+        query: { year, quarter },
+      });
+      return formatResponse(res);
+    },
+  },
+  {
     name: 'reports_sales_analysis',
     description:
       'Generate a sales analysis report for a date range. Returns KPI summary (annual total, invoiced, collected, outstanding), monthly revenue trends, recent invoices, top clients, and top products. Requires X-Company header (companyId param or STORNO_COMPANY_ID env var).',
