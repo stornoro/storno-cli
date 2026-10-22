@@ -7,39 +7,40 @@ export const tools = [
   {
     name: 'reports_vat',
     description:
-      'Generate a detailed VAT (TVA) report for a specific month. Returns a summary of sales, purchases, VAT collected, VAT deductible, and net VAT due, along with per-invoice details. Requires X-Company header (companyId param or STORNO_COMPANY_ID env var).',
+      'VAT (TVA) summary of a period: issued (collected) and received (deductible) invoices totalled and broken down by VAT rate, net VAT and invoice counts, in the invoice currencies. Period: year+month (default: current month), year+quarter, year+period=year (whole year) or from+to (YYYY-MM-DD). Filters: direction (outgoing|incoming), clientId, supplierId, currency (ISO code), vatRate (only the lines at that rate count), documentType (invoice|credit_note), finalOnly (leave drafts, rejected and converted documents out). Requires X-Company header (companyId param or STORNO_COMPANY_ID env var).',
     inputSchema: z.object({
-      year: z
-        .number()
-        .int()
-        .min(2000)
-        .max(2100)
-        .describe('Report year (e.g. 2026)'),
-      month: z
-        .number()
-        .int()
-        .min(1)
-        .max(12)
-        .describe('Report month (1–12)'),
-      companyId: z
-        .string()
-        .optional()
-        .describe('Company UUID (overrides STORNO_COMPANY_ID env var)'),
+      year: z.number().int().min(2000).max(2100).optional().describe('Report year (default: current year)'),
+      month: z.number().int().min(1).max(12).optional().describe('Report month (1–12); the default period when no quarter / period / range is given'),
+      quarter: z.number().int().min(1).max(4).optional().describe('Quarter (1–4) instead of a month'),
+      period: z.enum(['year']).optional().describe("'year' for the whole year"),
+      from: z.string().optional().describe('Range start, YYYY-MM-DD (with to)'),
+      to: z.string().optional().describe('Range end, YYYY-MM-DD (with from)'),
+      direction: z.enum(['outgoing', 'incoming']).optional().describe('Only issued or only received invoices'),
+      clientId: z.string().optional().describe('Only invoices of this client (UUID)'),
+      supplierId: z.string().optional().describe('Only invoices of this supplier (UUID)'),
+      currency: z.string().optional().describe('Only invoices in this currency (ISO code, e.g. RON)'),
+      vatRate: z.number().optional().describe('Only the lines at this VAT rate (e.g. 21); totals are then summed from those lines'),
+      documentType: z.enum(['invoice', 'credit_note']).optional().describe('Only invoices or only credit notes'),
+      finalOnly: z.boolean().optional().describe('Leave drafts, rejected and converted documents out (cancelled ones never count)'),
+      companyId: z.string().optional().describe('Company UUID (overrides STORNO_COMPANY_ID env var)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
 
-      const { year, month, companyId } = params as {
-        year: number;
-        month: number;
-        companyId?: string;
-      };
+      const { companyId, ...rest } = params as Record<string, unknown> & { companyId?: string };
       const effectiveCompanyId = companyId || getConfig().companyId;
       if (!effectiveCompanyId) return noCompanySelected();
 
+      const query: Record<string, string | number | boolean> = {};
+      for (const [k, v] of Object.entries(rest)) {
+        if (v !== undefined && v !== null && v !== '') query[k] = v as string | number | boolean;
+      }
+      if (query.finalOnly === true) query.finalOnly = 1;
+      if (query.finalOnly === false) delete query.finalOnly;
+
       const res = await apiRequest('/api/v1/reports/vat', {
         companyId: effectiveCompanyId,
-        query: { year, month },
+        query,
       });
       return formatResponse(res);
     },

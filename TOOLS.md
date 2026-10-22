@@ -3095,14 +3095,25 @@ List all available permission scopes that can be granted to OAuth2 applications,
 
 ### `reports_vat`
 
-Generate a detailed VAT (TVA) report for a specific month. Returns a summary of sales, purchases, VAT collected, VAT deductible, and net VAT due, along with per-invoice details. Requires X-Company header (companyId param or STORNO_COMPANY_ID env var).
+VAT (TVA) summary of a period: issued (collected) and received (deductible) invoices totalled and broken down by VAT rate, net VAT and invoice counts, in the invoice currencies (`currencies` lists them). Period: `year`+`month` (default: current month), `year`+`quarter`, `year`+`period=year` (whole year) or `from`+`to`. The response carries `period`, `from`, `to` and the `filters` applied.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `year` | number | Yes | Report year (e.g. 2026) |
-| `month` | number | Yes | Report month (1–12) |
+| `year` | number | No | Report year (default: current year) |
+| `month` | number | No | Report month (1–12); the default period when no quarter / period / range is given |
+| `quarter` | number | No | Quarter (1–4) instead of a month |
+| `period` | string | No | `year` for the whole year |
+| `from` | string | No | Range start, YYYY-MM-DD (with `to`) |
+| `to` | string | No | Range end, YYYY-MM-DD (with `from`) |
+| `direction` | string | No | `outgoing` or `incoming` only |
+| `clientId` | string | No | Only invoices of this client (UUID) |
+| `supplierId` | string | No | Only invoices of this supplier (UUID) |
+| `currency` | string | No | Only invoices in this currency (ISO code) |
+| `vatRate` | number | No | Only the lines at this VAT rate; totals are then summed from those lines |
+| `documentType` | string | No | `invoice` or `credit_note` only |
+| `finalOnly` | boolean | No | Leave drafts, rejected and converted documents out (cancelled ones never count) |
 | `companyId` | string | No | Company UUID (overrides STORNO_COMPANY_ID env var) |
 
 ### `reports_vat_oss`
