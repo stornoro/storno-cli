@@ -340,3 +340,7 @@ storno-cli/
 ## License
 
 [Elastic License 2.0 (ELv2)](LICENSE)
+
+## Tool annotations
+
+All tools carry explicit MCP annotations (`title`, `readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`), so a client can tell reads from writes and writes from deletes before calling anything. See the *Tool annotations* section of [TOOLS.md](TOOLS.md); `npm run check:annotations -- --table` prints the table.

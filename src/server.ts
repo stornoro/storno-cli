@@ -9,6 +9,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 import { getConfig, updateConfig } from './config.js';
+import { annotationsFor, type ToolAnnotations } from './annotations.js';
 import { apiRequest } from './client.js';
 import { sessionContext } from './context.js';
 
@@ -79,7 +80,7 @@ interface ToolDef {
   handler: (params: Record<string, unknown>) => Promise<string>;
 }
 
-const allTools: ToolDef[] = [
+export const allTools: ToolDef[] = [
   ...authTools,
   ...companiesTools,
   ...invoicesTools,
@@ -144,14 +145,17 @@ const allTools: ToolDef[] = [
 export function createMcpServer(): McpServer {
   const server = new McpServer({
     name: 'storno',
-    version: '1.0.54',
+    version: '1.0.55',
   });
 
   for (const tool of allTools) {
+    // Every tool carries explicit annotations (title + the four hints), see annotations.ts
+    const annotations = annotationsFor(tool.name, (tool as { annotations?: Partial<ToolAnnotations> }).annotations);
     server.tool(
       tool.name,
       tool.description,
       tool.inputSchema.shape,
+      annotations,
       async (params, extra) => {
         const run = async () => {
           try {

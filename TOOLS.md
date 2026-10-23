@@ -58,7 +58,11 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Calendar subscription](#calendar-subscription)
 - [Integrations (partner platforms)](#integrations-partner-platforms)
 
-**Total tools: 368**
+**Total tools: 372**
+
+### Tool annotations
+
+Every tool is registered with the MCP annotations clients and directory reviews rely on, each hint an explicit boolean: `title` (e.g. *Invoices: bulk delete*), `readOnlyHint` (reads, renders, validations — 178 tools), `destructiveHint` (deletes, cancellations, revocations, `import_revert`, `backup_restore` — 44 tools), `idempotentHint` (repeating the call with the same arguments has no further effect: reads, updates, deletes, state flags) and `openWorldHint` (the tool reaches outside Storno: ANAF, VIES, BNR, the mail server, the local Storno Agent, a webhook endpoint, a provider test — 42 tools). A *storno* (credit note) is a write, not a delete: the original document stays. The mapping lives in `src/annotations.ts`; `npm run check:annotations -- --table` prints the full table and fails if any hint is missing.
 
 ---
 
