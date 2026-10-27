@@ -275,8 +275,8 @@ List invoices for the active company with pagination, filtering, and sorting. Su
 | `search` | string | No | Search term for invoice number or client name |
 | `status` | enum(draft, issued, sent_to_provider, validated, rejected, cancelled) | No | Filter by invoice status |
 | `direction` | enum(incoming, outgoing) | No | Filter by direction: incoming or outgoing invoices |
-| `from` | string | No | Start date filter in ISO 8601 format (YYYY-MM-DD) |
-| `to` | string | No | End date filter in ISO 8601 format (YYYY-MM-DD) |
+| `dateFrom` | string | No | Start date filter on the issue date, ISO 8601 (YYYY-MM-DD) |
+| `dateTo` | string | No | End date filter on the issue date, ISO 8601 (YYYY-MM-DD) |
 | `clientId` | string | No | Filter by client UUID |
 | `sort` | enum(issueDate, number, total, dueDate) | No | Field to sort by (default: issueDate) |
 | `order` | enum(asc, desc) | No | Sort order: asc or desc (default: desc) |
@@ -606,8 +606,8 @@ Export a filtered list of invoices to CSV format. Accepts the same filters as in
 | `search` | string | No | Search term for invoice number or client name |
 | `status` | enum(draft, issued, sent_to_provider, validated, rejected, cancelled) | No | Filter by invoice status |
 | `direction` | enum(incoming, outgoing) | No | Filter by direction |
-| `from` | string | No | Start date (YYYY-MM-DD) |
-| `to` | string | No | End date (YYYY-MM-DD) |
+| `dateFrom` | string | No | Start date (YYYY-MM-DD, issue date) |
+| `dateTo` | string | No | End date (YYYY-MM-DD, issue date) |
 | `clientId` | string | No | Filter by client UUID |
 | `sort` | enum(issueDate, number, total, dueDate) | No | Sort field |
 | `order` | enum(asc, desc) | No | Sort order |
@@ -686,31 +686,35 @@ Export invoices in Saga XML format for accounting software integration (e.g., Sa
 | `search` | string | No | Search term for invoice number or client name |
 | `status` | enum(draft, issued, sent_to_provider, validated, rejected, cancelled) | No | Filter by invoice status |
 | `direction` | enum(incoming, outgoing) | No | Filter by direction |
-| `from` | string | No | Start date (YYYY-MM-DD) |
-| `to` | string | No | End date (YYYY-MM-DD) |
+| `dateFrom` | string | No | Start date (YYYY-MM-DD, issue date) |
+| `dateTo` | string | No | End date (YYYY-MM-DD, issue date) |
 | `clientId` | string | No | Filter by client UUID |
 | `sort` | enum(issueDate, number, total, dueDate) | No | Sort field |
 | `order` | enum(asc, desc) | No | Sort order |
 
 ### `invoices_export_receipts_saga_xml`
 
-Export payment receipts (incasari) in Saga XML format. Exports all outgoing invoice payments for accounting integration.
+Export payment receipts (incasari) in Saga XML format. Exports the outgoing invoice payments in the given period (all of them when no period is passed) for accounting integration.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
+| `dateFrom` | string | No | Start date (YYYY-MM-DD, payment date). Pass a period: without one the whole history is exported. |
+| `dateTo` | string | No | End date (YYYY-MM-DD, payment date) |
 
 ### `invoices_export_payments_saga_xml`
 
-Export supplier payments (plati) in Saga XML format. Exports all incoming invoice payments for accounting integration.
+Export supplier payments (plati) in Saga XML format. Exports the incoming invoice payments in the given period (all of them when no period is passed) for accounting integration.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
+| `dateFrom` | string | No | Start date (YYYY-MM-DD, payment date). Pass a period: without one the whole history is exported. |
+| `dateTo` | string | No | End date (YYYY-MM-DD, payment date) |
 
 ### `invoices_export_efactura_zip`
 
@@ -2959,8 +2963,8 @@ Retrieve a paginated list of delivery attempts for a webhook endpoint. Can filte
 | `limit` | number | No | Number of items per page (default: 20, max: 100) |
 | `status` | enum(success, failed) | No | Filter by delivery status: success or failed |
 | `eventType` | string | No | Filter by event type name (e.g. invoice.validated) |
-| `from` | string | No | Start date filter in ISO 8601 format (YYYY-MM-DD) |
-| `to` | string | No | End date filter in ISO 8601 format (YYYY-MM-DD) |
+| `dateFrom` | string | No | Start date filter on the issue date, ISO 8601 (YYYY-MM-DD) |
+| `dateTo` | string | No | End date filter on the issue date, ISO 8601 (YYYY-MM-DD) |
 | `companyId` | string | No | Company UUID (overrides STORNO_COMPANY_ID env var) |
 
 ### `webhooks_delivery_detail`

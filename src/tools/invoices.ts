@@ -187,14 +187,14 @@ export const tools = [
         .enum(['incoming', 'outgoing'])
         .optional()
         .describe('Filter by direction: incoming or outgoing invoices'),
-      from: z
+      dateFrom: z
         .string()
         .optional()
-        .describe('Start date filter in ISO 8601 format (YYYY-MM-DD)'),
-      to: z
+        .describe('Start date filter on the issue date, ISO 8601 (YYYY-MM-DD)'),
+      dateTo: z
         .string()
         .optional()
-        .describe('End date filter in ISO 8601 format (YYYY-MM-DD)'),
+        .describe('End date filter on the issue date, ISO 8601 (YYYY-MM-DD)'),
       clientId: z.string().optional().describe('Filter by client UUID'),
       sort: z
         .enum(['issueDate', 'number', 'total', 'dueDate'])
@@ -216,8 +216,8 @@ export const tools = [
         search,
         status,
         direction,
-        from,
-        to,
+        dateFrom,
+        dateTo,
         clientId,
         sort,
         order,
@@ -231,8 +231,8 @@ export const tools = [
           search: search as string | undefined,
           status: status as string | undefined,
           direction: direction as string | undefined,
-          from: from as string | undefined,
-          to: to as string | undefined,
+          dateFrom: dateFrom as string | undefined,
+          dateTo: dateTo as string | undefined,
           clientId: clientId as string | undefined,
           sort: sort as string | undefined,
           order: order as string | undefined,
@@ -1082,8 +1082,8 @@ export const tools = [
         .enum(['incoming', 'outgoing'])
         .optional()
         .describe('Filter by direction'),
-      from: z.string().optional().describe('Start date (YYYY-MM-DD)'),
-      to: z.string().optional().describe('End date (YYYY-MM-DD)'),
+      dateFrom: z.string().optional().describe('Start date (YYYY-MM-DD, issue date)'),
+      dateTo: z.string().optional().describe('End date (YYYY-MM-DD, issue date)'),
       clientId: z.string().optional().describe('Filter by client UUID'),
       sort: z
         .enum(['issueDate', 'number', 'total', 'dueDate'])
@@ -1096,14 +1096,14 @@ export const tools = [
       const companyId = getCompanyId(params);
       if (!companyId) return noCompanySelected();
 
-      const { search, status, direction, from, to, clientId, sort, order } = params as Record<
+      const { search, status, direction, dateFrom, dateTo, clientId, sort, order } = params as Record<
         string,
         string | undefined
       >;
 
       const result = await apiRequest('/api/v1/invoices/export/csv', {
         companyId,
-        query: { search, status, direction, from, to, clientId, sort, order },
+        query: { search, status, direction, dateFrom, dateTo, clientId, sort, order },
       });
       return formatResponse(result);
     },
@@ -1341,8 +1341,8 @@ export const tools = [
         .enum(['incoming', 'outgoing'])
         .optional()
         .describe('Filter by direction'),
-      from: z.string().optional().describe('Start date (YYYY-MM-DD)'),
-      to: z.string().optional().describe('End date (YYYY-MM-DD)'),
+      dateFrom: z.string().optional().describe('Start date (YYYY-MM-DD, issue date)'),
+      dateTo: z.string().optional().describe('End date (YYYY-MM-DD, issue date)'),
       clientId: z.string().optional().describe('Filter by client UUID'),
       sort: z
         .enum(['issueDate', 'number', 'total', 'dueDate'])
@@ -1355,14 +1355,14 @@ export const tools = [
       const companyId = getCompanyId(params);
       if (!companyId) return noCompanySelected();
 
-      const { search, status, direction, from, to, clientId, sort, order } = params as Record<
+      const { search, status, direction, dateFrom, dateTo, clientId, sort, order } = params as Record<
         string,
         string | undefined
       >;
 
       const result = await apiRequest('/api/v1/invoices/export/saga-xml', {
         companyId,
-        query: { search, status, direction, from, to, clientId, sort, order },
+        query: { search, status, direction, dateFrom, dateTo, clientId, sort, order },
       });
       return formatResponse(result);
     },
@@ -1371,8 +1371,10 @@ export const tools = [
   {
     name: 'invoices_export_receipts_saga_xml',
     description:
-      'Export payment receipts (incasari) in Saga XML format. Exports all outgoing invoice payments for accounting software integration. Use accountCash/accountBank/accountCard to override the chart-of-accounts for this export (defaults come from the company’s stored SAGA settings; SAGA requires the leaf analytic for cards, e.g. 5125.2).',
+      'Export payment receipts (incasari) in Saga XML format. Exports the outgoing invoice payments in the given period (all of them when no period is passed) for accounting software integration. Use accountCash/accountBank/accountCard to override the chart-of-accounts for this export (defaults come from the company’s stored SAGA settings; SAGA requires the leaf analytic for cards, e.g. 5125.2).',
     inputSchema: z.object({
+      dateFrom: z.string().optional().describe('Start date (YYYY-MM-DD, payment date). Pass a period: without one the whole history is exported.'),
+      dateTo: z.string().optional().describe('End date (YYYY-MM-DD, payment date)'),
       accountCash: z.string().optional().describe('Override cash account (e.g. 5311)'),
       accountBank: z.string().optional().describe('Override bank transfer account (e.g. 5121)'),
       accountCard: z.string().optional().describe('Override card analytic account (e.g. 5125.2)'),
@@ -1386,13 +1388,17 @@ export const tools = [
       const companyId = getCompanyId(params);
       if (!companyId) return noCompanySelected();
 
-      const { accountCash, accountBank, accountCard } = params as {
+      const { dateFrom, dateTo, accountCash, accountBank, accountCard } = params as {
+        dateFrom?: string;
+        dateTo?: string;
         accountCash?: string;
         accountBank?: string;
         accountCard?: string;
       };
 
       const query: Record<string, string> = {};
+      if (dateFrom) query.dateFrom = dateFrom;
+      if (dateTo) query.dateTo = dateTo;
       if (accountCash) query.accountCash = accountCash;
       if (accountBank) query.accountBank = accountBank;
       if (accountCard) query.accountCard = accountCard;
@@ -1408,8 +1414,10 @@ export const tools = [
   {
     name: 'invoices_export_payments_saga_xml',
     description:
-      'Export supplier payments (plati) in Saga XML format. Exports all incoming invoice payments for accounting software integration. Use accountCash/accountBank/accountCard to override the chart-of-accounts for this export (defaults come from the company’s stored SAGA settings).',
+      'Export supplier payments (plati) in Saga XML format. Exports the incoming invoice payments in the given period (all of them when no period is passed) for accounting software integration. Use accountCash/accountBank/accountCard to override the chart-of-accounts for this export (defaults come from the company’s stored SAGA settings).',
     inputSchema: z.object({
+      dateFrom: z.string().optional().describe('Start date (YYYY-MM-DD, payment date). Pass a period: without one the whole history is exported.'),
+      dateTo: z.string().optional().describe('End date (YYYY-MM-DD, payment date)'),
       accountCash: z.string().optional().describe('Override cash account (e.g. 5311)'),
       accountBank: z.string().optional().describe('Override bank transfer account (e.g. 5121)'),
       accountCard: z.string().optional().describe('Override card analytic account (e.g. 5125.2)'),
@@ -1423,13 +1431,17 @@ export const tools = [
       const companyId = getCompanyId(params);
       if (!companyId) return noCompanySelected();
 
-      const { accountCash, accountBank, accountCard } = params as {
+      const { dateFrom, dateTo, accountCash, accountBank, accountCard } = params as {
+        dateFrom?: string;
+        dateTo?: string;
         accountCash?: string;
         accountBank?: string;
         accountCard?: string;
       };
 
       const query: Record<string, string> = {};
+      if (dateFrom) query.dateFrom = dateFrom;
+      if (dateTo) query.dateTo = dateTo;
       if (accountCash) query.accountCash = accountCash;
       if (accountBank) query.accountBank = accountBank;
       if (accountCard) query.accountCard = accountCard;
