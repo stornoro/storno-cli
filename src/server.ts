@@ -145,7 +145,7 @@ export const allTools: ToolDef[] = [
 export function createMcpServer(): McpServer {
   const server = new McpServer({
     name: 'storno',
-    version: '1.0.56',
+    version: '1.0.57',
   });
 
   for (const tool of allTools) {
