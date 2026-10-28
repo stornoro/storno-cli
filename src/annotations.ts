@@ -183,6 +183,8 @@ const EXPLICIT: Record<string, Hints> = {
   recurring_invoices_issue_now: WRITE,
   recurring_invoices_bulk_issue_now: WRITE,
   invoices_issue: WRITE_IDEMPOTENT,
+  payments_receipt_issue: WRITE_IDEMPOTENT, // a payment keeps the receipt it already has
+  payments_receipt_pdf: READ,
   receipts_issue: WRITE_IDEMPOTENT,
   delivery_notes_issue: WRITE_IDEMPOTENT,
   dosare_c168_create: WRITE,

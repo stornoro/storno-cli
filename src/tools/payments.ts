@@ -122,4 +122,47 @@ export const tools = [
       return formatResponse(result);
     },
   },
+
+  {
+    name: 'payments_receipt_issue',
+    description:
+      'Issue the chitanță (cash receipt) for a cash payment already recorded on an issued invoice: a number from the receipt series (the company default, or seriesId) and a date (default: the payment date). The receipt documents the existing payment and never records a second one — the invoice balance and the cash register keep the same single payment. Idempotent: a payment that already has a receipt keeps it. 422 for non-cash payments, received invoices, or when no receipt series exists.',
+    inputSchema: z.object({
+      invoiceId: z.string().describe('Invoice UUID'),
+      paymentId: z.string().describe('Payment UUID (from payments_list; paymentMethod must be cash)'),
+      seriesId: z.string().optional().describe('Receipt series UUID (type receipt); default: the company default receipt series'),
+      date: z.string().optional().describe('Receipt date YYYY-MM-DD (default: the payment date)'),
+      companyId: z.string().optional().describe('Company UUID override (uses active company if not set)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const companyId = getCompanyId(params);
+      if (!companyId) return noCompanySelected();
+      const { invoiceId, paymentId, seriesId, date } = params as { invoiceId: string; paymentId: string; seriesId?: string; date?: string };
+      const body: Record<string, string> = {};
+      if (seriesId) body.seriesId = seriesId;
+      if (date) body.date = date;
+      const result = await apiRequest(`/api/v1/invoices/${invoiceId}/payments/${paymentId}/receipt`, { method: 'POST', body, companyId });
+      return formatResponse(result);
+    },
+  },
+
+  {
+    name: 'payments_receipt_pdf',
+    description:
+      'Download the PDF of the chitanță issued for a cash payment (see payments_receipt_issue). A5 landscape: company, payer, amount in figures and in words, the invoice it settles, the payment date.',
+    inputSchema: z.object({
+      invoiceId: z.string().describe('Invoice UUID'),
+      paymentId: z.string().describe('Payment UUID with a receipt issued'),
+      companyId: z.string().optional().describe('Company UUID override (uses active company if not set)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const companyId = getCompanyId(params);
+      if (!companyId) return noCompanySelected();
+      const { invoiceId, paymentId } = params as { invoiceId: string; paymentId: string };
+      const result = await apiRequest(`/api/v1/invoices/${invoiceId}/payments/${paymentId}/receipt/pdf`, { companyId, binary: true });
+      return formatResponse(result);
+    },
+  },
 ];

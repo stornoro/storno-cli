@@ -58,7 +58,7 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Calendar subscription](#calendar-subscription)
 - [Integrations (partner platforms)](#integrations-partner-platforms)
 
-**Total tools: 372**
+**Total tools: 374**
 
 ### Tool annotations
 
@@ -1115,6 +1115,36 @@ Record a payment received for an invoice. Updates the invoice amountPaid and bal
 | `currency` | string | No | Currency code (ISO 4217). Defaults to invoice currency. Include if payment is in a different currency. |
 | `reference` | string | No | Payment reference number (e.g., bank transfer reference, receipt number) |
 | `notes` | string | No | Additional notes about this payment |
+
+### `payments_receipt_issue`
+
+Issue the chitanță (cash receipt) for a cash payment already recorded on an issued invoice: a number from the receipt series (the company default, or `seriesId`) and a date (default: the payment date). The receipt documents the existing payment and never records a second one — the invoice balance and the cash register keep the same single payment. Idempotent: a payment that already has a receipt keeps it. 422 for non-cash payments, received invoices, or when no receipt series exists.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `invoiceId` | string | Yes | Invoice UUID |
+| `paymentId` | string | Yes | Payment UUID (from payments_list; paymentMethod must be cash) |
+| `seriesId` | string | No | Receipt series UUID (type receipt); default: the company default receipt series |
+| `date` | string | No | Receipt date YYYY-MM-DD (default: the payment date) |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+---
+
+### `payments_receipt_pdf`
+
+Download the PDF of the chitanță issued for a cash payment (see `payments_receipt_issue`). A5 landscape: company, payer, amount in figures and in words, the invoice it settles, the payment date.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `invoiceId` | string | Yes | Invoice UUID |
+| `paymentId` | string | Yes | Payment UUID with a receipt issued |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+---
 
 ### `payments_delete`
 
