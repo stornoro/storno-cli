@@ -11,7 +11,7 @@ export const tools = [
   {
     name: 'import_sources',
     description:
-      'Get available import sources and import types. Returns supported import sources (SmartBill, Saga, Oblio, FGO, Facturis, eMag, and the sales sources Uber, Bolt, Glovo, Tazz, WooCommerce, PrestaShop, cash_register) and import types (clients, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts).',
+      'Get available import sources and import types. Returns supported import sources (SmartBill, Saga, Oblio, FGO, Facturis, eMag, and the sales sources Uber, Bolt, Glovo, Tazz, WooCommerce, PrestaShop, cash_register) and import types (clients, suppliers, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts).',
     inputSchema: z.object({
       companyId: z
         .string()
@@ -144,11 +144,11 @@ export const tools = [
   {
     name: 'import_upload',
     description:
-      'Upload a file (CSV, XLSX, XML, or ZIP) to start a new import job. Requires importType (clients, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts) and source (smartbill, saga, oblio, fgo, facturis_online, easybill, ciel, factureaza, facturare_pro, icefact, bolt, facturis, emag, uber, glovo, tazz, woocommerce, prestashop, cash_register, generic). Platform statements (uber, bolt, glovo, tazz) use importType platform_sales and become one sales invoice to the platform plus the commission purchase invoice per group; shop exports (woocommerce, prestashop) use invoices_issued; the A4200 XML or a ZIP of a month exported by a fiscal cash register uses source cash_register with importType receipts. Returns the created import job with preview data.',
+      'Upload a file (CSV, XLSX, XML, or ZIP) to start a new import job. Requires importType (clients, suppliers, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts) and source (smartbill, saga, oblio, fgo, facturis_online, easybill, ciel, factureaza, facturare_pro, icefact, bolt, facturis, emag, uber, glovo, tazz, woocommerce, prestashop, cash_register, generic). Platform statements (uber, bolt, glovo, tazz) use importType platform_sales and become one sales invoice to the platform plus the commission purchase invoice per group; shop exports (woocommerce, prestashop) use invoices_issued; the A4200 XML or a ZIP of a month exported by a fiscal cash register uses source cash_register with importType receipts. The invoice report of another invoicing or accounting program (or any spreadsheet, source generic) uses importType invoices_issued or invoices_received: one row per invoice or one row per invoice line, the mapping is suggested from the usual column names, collection status is read from the file and missing clients are created; the invoice XML those programs export for the accountant (<Facturi><Factura>, .xml with source smartbill, saga, oblio, fgo or generic) is read as well. A supplier list exported by another program (or any spreadsheet, source generic) uses importType suppliers: suppliers already known by fiscal code are not duplicated, only completed with the fields they miss. Returns the created import job with preview data.',
     inputSchema: z.object({
       filePath: z.string().describe('Absolute path to the file to upload (CSV, XLSX, XML, or a ZIP of A4200 XML files)'),
       importType: z
-        .enum(['clients', 'products', 'invoices_issued', 'invoices_received', 'recurring_invoices', 'platform_sales', 'receipts'])
+        .enum(['clients', 'suppliers', 'products', 'invoices_issued', 'invoices_received', 'recurring_invoices', 'platform_sales', 'receipts'])
         .describe('Type of data being imported'),
       source: z
         .enum([
@@ -189,7 +189,7 @@ export const tools = [
       'Download a CSV template for a specific import type. Returns base64-encoded CSV with column headers and example rows that can be filled in and uploaded via import_upload. Pass source for a platform or shop template (uber, bolt, glovo, tazz, woocommerce, prestashop) to get the columns of that export instead of the generic ones.',
     inputSchema: z.object({
       importType: z
-        .enum(['clients', 'products', 'invoices_issued', 'invoices_received', 'recurring_invoices', 'platform_sales', 'receipts'])
+        .enum(['clients', 'suppliers', 'products', 'invoices_issued', 'invoices_received', 'recurring_invoices', 'platform_sales', 'receipts'])
         .describe('Type of import to get template for'),
       source: z
         .enum(['uber', 'bolt', 'glovo', 'tazz', 'woocommerce', 'prestashop'])

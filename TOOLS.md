@@ -3985,6 +3985,10 @@ Get full status and details of an import job including progress and error detail
 
 Upload a file (CSV, XLSX, XML, or ZIP) to start a new import job. Returns the created job with preview data.
 
+Partner lists: `clients` and `suppliers` read the client / supplier list exported by another invoicing or accounting program (every source that imports clients imports suppliers too) or any spreadsheet (`generic`). A supplier already known by fiscal code — typically created by the e-Factura sync from a received invoice — is not duplicated: the fields it misses are filled in and the row counts as updated.
+
+Invoice history: `invoices_issued` and `invoices_received` read the invoice report of another invoicing or accounting program (every source that imports clients) or any spreadsheet (`generic`), with one row per invoice or one row per invoice line. The mapping is suggested from the usual column names; the collection status (`Rest de plată`, `Încasat`, `Stare`) gives paid or partially paid invoices, the others follow `markAsPaid`; clients missing from the nomenclature are created from the invoice. The invoice XML these programs export for the accountant (`<Facturi><Factura>…`, an `.xml` file with source `smartbill`, `saga`, `oblio`, `fgo` or `generic`) is read too, one line per `<Linie>`; invoices of another fiscal code than the company's are refused. Imported invoices are history and are never sent to ANAF.
+
 Sales sources: a platform statement (`uber`, `bolt`, `glovo`, `tazz`) is uploaded with `importType` `platform_sales` and becomes one sales invoice to the platform per group plus the commission purchase invoice; a shop order export (`woocommerce`, `prestashop`) uses `invoices_issued` and becomes one invoice per order; the A4200 XML a fiscal cash register exports (or a ZIP with a month of them) uses source `cash_register` with `importType` `receipts` and becomes one receipt per bon plus a daily summary on the job.
 
 **Parameters:**
@@ -3992,7 +3996,7 @@ Sales sources: a platform statement (`uber`, `bolt`, `glovo`, `tazz`) is uploade
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `filePath` | string | Yes | Absolute path to the file (CSV, XLSX, XML, or a ZIP of A4200 XML files) |
-| `importType` | string | Yes | Type: clients, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts |
+| `importType` | string | Yes | Type: clients, suppliers, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts |
 | `source` | string | Yes | Source app: smartbill, saga, oblio, fgo, facturis_online, easybill, ciel, factureaza, facturare_pro, icefact, bolt, facturis, emag, uber, glovo, tazz, woocommerce, prestashop, cash_register, generic |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
@@ -4004,13 +4008,13 @@ Download a CSV template for a specific import type. Returns base64-encoded CSV.
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `importType` | string | Yes | Type: clients, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts |
+| `importType` | string | Yes | Type: clients, suppliers, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts |
 | `source` | string | No | Platform / shop whose column layout the template should use: uber, bolt, glovo, tazz, woocommerce, prestashop |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `import_revert`
 
-Revert a completed or cancelled import job: deletes every record it created (invoices and their lines, receipts, clients, payments) and marks the job as reverted.
+Revert a completed or cancelled import job: deletes every record it created (invoices and their lines, receipts, clients, suppliers, payments) and marks the job as reverted.
 
 **Parameters:**
 
@@ -4306,7 +4310,7 @@ Step 2: relay ANAF's answer (`{id_solicitare, titlu}` or `{eroare}`) for `reques
 Delete a pending or failed request record.
 
 ### `spv_sync_prepare`
-Returns the ANAF `listaMesaje` URL for the agent and pending downloads. **Parameters:** `days` (1-60), `companyId`
+Returns the ANAF `listaMesaje` URL for the agent and pending downloads. With `includeRequests: true` it also returns `requests[]` — the periodic reports due now (the fișa rol once every 28 days), each with a `requestId` and an `anafUrl` to GET with the certificate and relay through `spv_request_agent_result`; when the answer is archived the balance is read and an unpaid amount notifies the users (`spv.unpaid_balance`). **Parameters:** `days` (1-60), `includeRequests`, `companyId`
 
 ### `spv_sync_agent_result`
 Relay ANAF's listing; archives, classifies, notifies; returns `documents[]` to fetch. **Parameters:** `statusCode`, `body`, `companyId`

@@ -98,16 +98,17 @@ export const tools = [
   {
     name: 'spv_sync_prepare',
     description:
-      'Step 1 of an SPV inbox sync. Returns the ANAF listaMesaje URL the local storno-agent must GET with the qualified certificate (mTLS; the OAuth token is not accepted by SPVWS2), plus any PDFs still pending download. Relay the ANAF response with spv_sync_agent_result.',
+      'Step 1 of an SPV inbox sync. Returns the ANAF listaMesaje URL the local storno-agent must GET with the qualified certificate (mTLS; the OAuth token is not accepted by SPVWS2), plus any PDFs still pending download. With includeRequests, also returns the periodic reports to place (the fisa rol once every 28 days): GET each anafUrl with the certificate and relay the answer with spv_request_agent_result; the balance is read when the answer is archived and an unpaid amount notifies the users. Relay the listing with spv_sync_agent_result.',
     inputSchema: z.object({
       days: z.number().int().min(1).max(60).optional().describe('How many days back to list (default and max: 60)'),
+      includeRequests: z.boolean().optional().describe('Also return the periodic ANAF reports due now (fisa rol every 28 days) as requests[] to place through the agent'),
       companyId: companyIdSchema,
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       if (!getConfig().token) return notAuthenticated();
       const res = await apiRequest('/api/v1/spv/sync-prepare', {
         method: 'POST',
-        body: { days: params.days },
+        body: { days: params.days, includeRequests: params.includeRequests },
         companyId: params.companyId as string | undefined,
       });
       return formatResponse(res);
