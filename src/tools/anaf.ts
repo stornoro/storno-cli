@@ -21,7 +21,7 @@ export const tools = [
   {
     name: 'anaf_tokens',
     description:
-      'List all ANAF OAuth tokens associated with the authenticated user. Each token enables e-Factura synchronization for a specific company CIF. Returns token ID, CIF, expiry, and validity status.',
+      'List all ANAF OAuth tokens of the authenticated user: id (UUID), label, expiresAt, isExpired, lastUsedAt, validatedCifs and exclusive. An exclusive token is bound to one company and used for it alone; the others are shared by the companies of the organization.',
     inputSchema: z.object({}),
     handler: async (_params: Record<string, unknown>): Promise<string> => {
       const config = getConfig();
@@ -35,15 +35,45 @@ export const tools = [
   {
     name: 'anaf_create_token_link',
     description:
-      'Create a device-based authentication token link for completing the ANAF OAuth flow. Returns a unique URL that can be opened in a browser to complete ANAF authentication. Maximum 5 active links per user. Link expires after a short period.',
-    inputSchema: z.object({}),
-    handler: async (_params: Record<string, unknown>): Promise<string> => {
+      'Create a link the certificate holder opens on their own device to authorize ANAF access (no Storno account needed there). Returns linkToken, linkUrl, companyId, exclusive and expiresAt. A link lasts 24 hours and a user may hold 5 active links, or the higher limit set on the organization. With exclusive=true the resulting token is bound to that company and used for it alone: the certificate must have SPV rights on its CIF, no other token of the organization is ever used for the company, and deleting the token revokes that one company. Without it, tokens are shared: any token of the organization can serve any of its companies (one certificate for all companies).',
+    inputSchema: z.object({
+      companyId: z
+        .string()
+        .optional()
+        .describe('Company UUID the link is for. The token is validated against the CIF of this company. Required when exclusive is true.'),
+      exclusive: z
+        .boolean()
+        .optional()
+        .describe('Bind the resulting token to the company and use it for that company only. Default false (shared tokens).'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
       const config = getConfig();
       if (!config.token) return notAuthenticated();
 
+      const body: Record<string, unknown> = {};
+      if (params.companyId) body.companyId = params.companyId;
+      if (params.exclusive !== undefined) body.exclusive = params.exclusive;
+
       const res = await apiRequest('/api/v1/anaf/token-links', {
         method: 'POST',
+        body,
       });
+      return formatResponse(res);
+    },
+  },
+
+  {
+    name: 'anaf_token_link_result',
+    description:
+      'Result of a token link you created: expired, used, completed, the tokenId the link produced (null until the holder has authorized), the companyId it was created for and whether it is exclusive. Poll this after sending a link to learn exactly which token came out of it, also when several links are authorized at the same time.',
+    inputSchema: z.object({
+      linkToken: z.string().describe('The linkToken returned by anaf_create_token_link'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      const config = getConfig();
+      if (!config.token) return notAuthenticated();
+
+      const res = await apiRequest(`/api/v1/anaf/token-links/${encodeURIComponent(String(params.linkToken))}/result`);
       return formatResponse(res);
     },
   },
@@ -51,9 +81,9 @@ export const tools = [
   {
     name: 'anaf_delete_token',
     description:
-      'Delete an ANAF OAuth token. This revokes e-Factura synchronization access for the CIF associated with this token. The token ID is an integer obtained from anaf_tokens.',
+      'Delete an ANAF OAuth token. A shared token stops serving every company that relied on it. An exclusive token (exclusive: true in anaf_tokens) revokes ANAF access for the one company it is bound to and nothing else. The token ID is the UUID from anaf_tokens or anaf_token_link_result.',
     inputSchema: z.object({
-      id: z.number().describe('The ANAF token ID to delete (integer ID from anaf_tokens)'),
+      id: z.string().describe('The ANAF token ID to delete (UUID from anaf_tokens)'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const config = getConfig();
@@ -71,7 +101,8 @@ export const tools = [
     description:
       'Validate that an ANAF token has proper access to e-Factura for a specific CIF. Checks organization ownership, ANAF registry, and e-Factura access permissions. Returns validation result with any error messages.',
     inputSchema: z.object({
-      id: z.number().describe('The ANAF token ID to validate (integer ID from anaf_tokens)'),
+      id: z.string().describe('The ANAF token ID to validate (UUID from anaf_tokens)'),
+      cif: z.string().describe('CIF of a company in your organization to check the token against'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const config = getConfig();
@@ -79,6 +110,7 @@ export const tools = [
 
       const res = await apiRequest(`/api/v1/anaf/tokens/${params.id}/validate-cif`, {
         method: 'POST',
+        body: { cif: params.cif },
       });
       return formatResponse(res);
     },

@@ -47,7 +47,9 @@ const deliveryLineItemSchema = z.object({
   description: z.string().describe('Item description'),
   quantity: z.number().describe('Quantity delivered (must be > 0)'),
   unitPrice: z.number().describe('Price per unit'),
-  vatRateId: z.string().describe('UUID of the VAT rate'),
+  vatRateId: z.string().optional().describe("VAT rate UUID from vat_rates_list: the line takes that rate's percentage and category. Send this or vatRate. With neither, the line gets 21% VAT, also when the company is not a VAT payer."),
+  vatRate: z.number().optional().describe('VAT percentage for the line, e.g. 21, 11, 9 or 0. Wins over vatRateId. With neither sent the line gets 21%, so for a company that is not a VAT payer always send 0.'),
+  vatCategoryCode: z.string().optional().describe('UBL VAT category code. Default S; a 0% rate becomes Z on its own. Set it only for special cases: O (not subject to VAT), E (exempt), AE (reverse charge), K (intra-community), G (export).'),
   unitOfMeasure: z.string().optional().describe('Unit of measure (e.g., piece, kg, hour)'),
   productId: z.string().optional().describe('UUID of related product'),
   // e-Transport line fields (required for schematron validation)

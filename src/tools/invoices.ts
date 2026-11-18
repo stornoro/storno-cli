@@ -123,10 +123,9 @@ const lineItemSchema = z.object({
   description: z.string().describe('Line item description (product or service name)'),
   quantity: z.number().describe('Quantity of items'),
   unitPrice: z.number().describe('Unit price per item (excluding VAT by default)'),
-  vatRateId: z
-    .string()
-    .optional()
-    .describe('VAT rate UUID (from vat_rates_list). Uses company default if not provided.'),
+  vatRateId: z.string().optional().describe("VAT rate UUID from vat_rates_list: the line takes that rate's percentage and category. Send this or vatRate. With neither, the line gets 21% VAT, also when the company is not a VAT payer."),
+  vatRate: z.number().optional().describe('VAT percentage for the line, e.g. 21, 11, 9 or 0. Wins over vatRateId. With neither sent the line gets 21%, so for a company that is not a VAT payer always send 0.'),
+  vatCategoryCode: z.string().optional().describe('UBL VAT category code. Default S; a 0% rate becomes Z on its own. Set it only for special cases: O (not subject to VAT), E (exempt), AE (reverse charge), K (intra-community), G (export).'),
   unitOfMeasure: z
     .string()
     .optional()
@@ -393,7 +392,7 @@ export const tools = [
       idempotencyKey: z
         .string()
         .optional()
-        .describe('Idempotency key to prevent duplicate creation'),
+        .describe('Idempotency key to prevent duplicate creation. Scoped to the company: the same key on another company creates a separate invoice. A retry with the same key returns the first invoice, and collect is not applied again once the invoice has a payment.'),
       // e-Factura BT fields (CIUS-RO schematron compliance)
       taxPointDate: z
         .string()

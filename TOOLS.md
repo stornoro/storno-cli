@@ -330,7 +330,7 @@ Create a new draft invoice. Requires a clientId and at least one line item. The 
 | `platitorTva` | boolean | No | Whether sender is VAT payer (default: false) |
 | `plataOnline` | boolean | No | Enable online payment via Stripe (default: from company settings) |
 | `showClientBalance` | boolean | No | Show client balance on invoice (default: false) |
-| `idempotencyKey` | string | No | Idempotency key to prevent duplicate creation |
+| `idempotencyKey` | string | No | Idempotency key to prevent duplicate creation. Scoped to the company: the same key on another company creates a separate invoice. A retry with the same key returns the first invoice, and collect is not applied again once the invoice has a payment. |
 | `collect` | boolean/object | No | Create an immediate payment. Pass `true` for full payment with defaults, or object with `value` (amount, defaults to total), `type` (payment method, defaults to `bank_transfer`), `issueDate` (YYYY-MM-DD), `documentNumber` (reference), `mentions` (notes) |
 | `penaltyEnabled` | boolean | No | Enable late payment penalty (default: false) |
 | `penaltyPercentPerDay` | number | No | Daily penalty percentage (e.g., 0.05 for 0.05% per day) |
@@ -339,7 +339,7 @@ Create a new draft invoice. Requires a clientId and at least one line item. The 
 | `vatIncluded` | boolean | No | When used with `autoApplyVatRules`, sets whether unit prices include VAT on all lines |
 | `paymentMethod` | enum | No | Payment method: `bank_transfer` (default), `cash`, `card`, `cheque`, `other` |
 | `ublExtensions` | object | No | UBL extension fields for advanced e-Factura compliance. Supports: `invoicePeriod` (startDate, endDate, descriptionCode), `delivery` (actualDeliveryDate, deliveryAddress), `allowanceCharges` (array, max 20 — each with chargeIndicator, amount, taxCategoryCode, taxRate), `prepaidAmount`, `additionalDocumentReferences` (array, max 10 — each with id, documentTypeCode, documentDescription) |
-| `lines` | array | Yes | Invoice line items (at least one required). Each line may include `ublExtensions` with: `invoicePeriod`, `allowanceCharges` (max 10), `additionalItemProperties` (max 20, name/value), `originCountry` |
+| `lines` | array | Yes | Invoice line items (at least one required). Each line may include `ublExtensions` with: `invoicePeriod`, `allowanceCharges` (max 10), `additionalItemProperties` (max 20, name/value), `originCountry`. VAT per line: `vatRate` (percentage) or `vatRateId` (a rate from `vat_rates_list`), optional `vatCategoryCode`. With neither the line gets 21% VAT, also when the company is not a VAT payer: send `vatRate: 0` for such a company. |
 
 **e-Factura BT fields (CIUS-RO schematron compliance):**
 
@@ -401,7 +401,7 @@ Update an existing draft invoice. Only invoices with status "draft" can be updat
 | `vatIncluded` | boolean | No | When used with `autoApplyVatRules`, sets whether unit prices include VAT on all lines |
 | `paymentMethod` | enum | No | Payment method: `bank_transfer`, `cash`, `card`, `cheque`, `other` |
 | `ublExtensions` | object | No | UBL extension fields (same schema as invoices_create). Pass `null` to clear. |
-| `lines` | array | No | Invoice line items. WARNING: replaces all existing lines — include every line you want to keep. Each line may include `ublExtensions`. |
+| `lines` | array | No | Invoice line items. WARNING: replaces all existing lines — include every line you want to keep. Each line may include `ublExtensions`. VAT per line: `vatRate` (percentage) or `vatRateId` (a rate from `vat_rates_list`), optional `vatCategoryCode`. With neither the line gets 21% VAT, also when the company is not a VAT payer: send `vatRate: 0` for such a company. |
 
 **e-Factura BT fields:** Same as `invoices_create` (taxPointDate, taxPointDateCode, buyerReference, receivingAdviceReference, despatchAdviceReference, tenderOrLotReference, invoicedObjectIdentifier, buyerAccountingReference, businessProcessType).
 
@@ -1518,7 +1518,7 @@ Create a new proforma invoice in draft status with line items. Supports multiple
 | `mentions` | string | No | Additional mentions or notes |
 | `internalNote` | string | No | Internal note (not visible to client) |
 | `salesAgent` | string | No | Sales agent name |
-| `lines` | array | Yes | Array of line items (minimum 1 required) |
+| `lines` | array | Yes | Array of line items (minimum 1 required). VAT per line: `vatRate` (percentage) or `vatRateId` (a rate from `vat_rates_list`), optional `vatCategoryCode`. With neither the line gets 21% VAT, also when the company is not a VAT payer: send `vatRate: 0` for such a company. |
 
 ### `proforma_invoices_update`
 
@@ -1549,7 +1549,7 @@ Update an existing proforma invoice. Only invoices in draft status can be update
 | `mentions` | string | No | Additional mentions or notes |
 | `internalNote` | string | No | Internal note (not visible to client) |
 | `salesAgent` | string | No | Sales agent name |
-| `lines` | array | Yes | Array of line items (replaces all existing lines) |
+| `lines` | array | Yes | Array of line items (replaces all existing lines). VAT per line: `vatRate` (percentage) or `vatRateId` (a rate from `vat_rates_list`), optional `vatCategoryCode`. With neither the line gets 21% VAT, also when the company is not a VAT payer: send `vatRate: 0` for such a company. |
 
 ### `proforma_invoices_delete`
 
@@ -1723,7 +1723,7 @@ Create a new recurring invoice template. The system will automatically generate 
 | `penaltyEnabled` | boolean | No | Enable late payment penalties (default: false) |
 | `penaltyPercentPerDay` | number | No | Daily penalty percentage |
 | `penaltyGraceDays` | number | No | Grace period in days before penalties apply |
-| `lines` | array | Yes | Array of line items (minimum 1 required) |
+| `lines` | array | Yes | Array of line items (minimum 1 required). VAT per line: `vatRate` (percentage) or `vatRateId` (a rate from `vat_rates_list`), optional `vatCategoryCode`. With neither the line gets 21% VAT, also when the company is not a VAT payer: send `vatRate: 0` for such a company. |
 
 ### `recurring_invoices_update`
 
@@ -1759,7 +1759,7 @@ Update an existing recurring invoice template. All fields are optional but at le
 | `penaltyEnabled` | boolean | No | Enable late payment penalties |
 | `penaltyPercentPerDay` | number | No | Daily penalty percentage |
 | `penaltyGraceDays` | number | No | Grace period in days before penalties apply |
-| `lines` | array | No | Array of line items (replaces all existing lines) |
+| `lines` | array | No | Array of line items (replaces all existing lines). VAT per line: `vatRate` (percentage) or `vatRateId` (a rate from `vat_rates_list`), optional `vatCategoryCode`. With neither the line gets 21% VAT, also when the company is not a VAT payer: send `vatRate: 0` for such a company. |
 
 ### `recurring_invoices_delete`
 
@@ -1908,7 +1908,7 @@ Create a new delivery note in draft status. Delivery notes document physical del
 | `etransportEndNumber` | string | No | End street number |
 | `etransportEndOtherInfo` | string | No | End additional address info |
 | `etransportEndPostalCode` | string | No | End postal code |
-| `lines` | array | Yes | Array of line items (minimum 1 required) |
+| `lines` | array | Yes | Array of line items (minimum 1 required). VAT per line: `vatRate` (percentage) or `vatRateId` (a rate from `vat_rates_list`), optional `vatCategoryCode`. With neither the line gets 21% VAT, also when the company is not a VAT payer: send `vatRate: 0` for such a company. |
 
 **Line item e-Transport fields:**
 
@@ -1970,7 +1970,7 @@ Update an existing delivery note. Delivery notes in draft or issued status can b
 | `etransportEndNumber` | string | No | End street number |
 | `etransportEndOtherInfo` | string | No | End additional info |
 | `etransportEndPostalCode` | string | No | End postal code |
-| `lines` | array | Yes | Array of line items (replaces all existing lines) |
+| `lines` | array | Yes | Array of line items (replaces all existing lines). VAT per line: `vatRate` (percentage) or `vatRateId` (a rate from `vat_rates_list`), optional `vatCategoryCode`. With neither the line gets 21% VAT, also when the company is not a VAT payer: send `vatRate: 0` for such a company. |
 
 **Line item e-Transport fields:** Same as `delivery_notes_create` (tariffCode, purposeCode, unitOfMeasureCode, netWeight, grossWeight, valueWithoutVat).
 
@@ -2202,7 +2202,7 @@ Create a new receipt (bon fiscal) in draft status. Receipts document point-of-sa
 | `notes` | string | No | Public notes on the receipt |
 | `mentions` | string | No | Additional mentions or instructions |
 | `internalNote` | string | No | Internal note (not visible to customer) |
-| `lines` | array | Yes | Array of line items (minimum 1 required) |
+| `lines` | array | Yes | Array of line items (minimum 1 required). VAT per line: `vatRate` (percentage) or `vatRateId` (a rate from `vat_rates_list`), optional `vatCategoryCode`. With neither the line gets 21% VAT, also when the company is not a VAT payer: send `vatRate: 0` for such a company. |
 
 ### `receipts_update`
 
@@ -2235,7 +2235,7 @@ Update an existing receipt. Receipts in draft or issued status can be updated. R
 | `notes` | string | No | Public notes on the receipt |
 | `mentions` | string | No | Additional mentions or instructions |
 | `internalNote` | string | No | Internal note (not visible to customer) |
-| `lines` | array | Yes | Array of line items (replaces all existing lines) |
+| `lines` | array | Yes | Array of line items (replaces all existing lines). VAT per line: `vatRate` (percentage) or `vatRateId` (a rate from `vat_rates_list`), optional `vatCategoryCode`. With neither the line gets 21% VAT, also when the company is not a VAT payer: send `vatRate: 0` for such a company. |
 
 ### `receipts_delete`
 
@@ -2683,25 +2683,40 @@ Check the current ANAF integration status for the authenticated user. Returns to
 
 ### `anaf_tokens`
 
-List all ANAF OAuth tokens associated with the authenticated user. Each token enables e-Factura synchronization for a specific company CIF. Returns token ID, CIF, expiry, and validity status.
+List all ANAF OAuth tokens of the authenticated user: id (UUID), label, expiresAt, isExpired, lastUsedAt, validatedCifs and exclusive. An exclusive token is bound to one company and used for it alone; the others are shared by the companies of the organization.
 
 *No parameters required.*
 
 ### `anaf_create_token_link`
 
-Create a device-based authentication token link for completing the ANAF OAuth flow. Returns a unique URL that can be opened in a browser to complete ANAF authentication. Maximum 5 active links per user. Link expires after a short period.
-
-*No parameters required.*
-
-### `anaf_delete_token`
-
-Delete an ANAF OAuth token. This revokes e-Factura synchronization access for the CIF associated with this token. The token ID is an integer obtained from anaf_tokens.
+Create a link the certificate holder opens on their own device to authorize ANAF access (no Storno account needed there). Returns linkToken, linkUrl, companyId, exclusive and expiresAt. A link lasts 24 hours and a user may hold 5 active links, or the higher limit set on the organization. With exclusive=true the resulting token is bound to that company and used for it alone: the certificate must have SPV rights on its CIF, no other token of the organization is ever used for the company, and deleting the token revokes that one company. Without it, tokens are shared: any token of the organization can serve any of its companies (one certificate for all companies).
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `id` | number | Yes | The ANAF token ID to delete (integer ID from anaf_tokens) |
+| `companyId` | string | No | Company UUID the link is for. The token is validated against the CIF of this company. Required when exclusive is true. |
+| `exclusive` | boolean | No | Bind the resulting token to the company and use it for that company only. Default false (shared tokens). |
+
+### `anaf_token_link_result`
+
+Result of a token link you created: expired, used, completed, the tokenId the link produced (null until the holder has authorized), the companyId it was created for and whether it is exclusive. Poll this after sending a link to learn exactly which token came out of it, also when several links are authorized at the same time.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `linkToken` | string | Yes | The linkToken returned by anaf_create_token_link |
+
+### `anaf_delete_token`
+
+Delete an ANAF OAuth token. A shared token stops serving every company that relied on it. An exclusive token (exclusive: true in anaf_tokens) revokes ANAF access for the one company it is bound to and nothing else. The token ID is the UUID from anaf_tokens or anaf_token_link_result.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `id` | string | Yes | The ANAF token ID to delete (UUID from anaf_tokens) |
 
 ### `anaf_validate_cif`
 
@@ -2711,7 +2726,8 @@ Validate that an ANAF token has proper access to e-Factura for a specific CIF. C
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `id` | number | Yes | The ANAF token ID to validate (integer ID from anaf_tokens) |
+| `id` | string | Yes | The ANAF token ID to validate (UUID from anaf_tokens) |
+| `cif` | string | Yes | CIF of a company in your organization to check the token against |
 
 ### `anaf_sync_trigger`
 
