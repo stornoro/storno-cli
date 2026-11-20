@@ -188,6 +188,8 @@ The response carries `type` and `isIndividual`; `companies_update` edits a perso
 
 Update configuration settings for a company. Note: core ANAF data (CIF, registration number, VAT status, official address) cannot be modified as they are synced from official ANAF sources. Only editable fields like contact info, bank details, and sync settings can be changed.
 
+Also sets the automatic overdue reminders. `overdueRemindersEnabled` turns them on; `overdueReminderSteps` sets when each email goes out and what it says. A step is sent on its day or up to 2 days late, never later, so turning the reminders on does not email clients about invoices that are long overdue. Exclude one client with `clients_update` (`overdueRemindersDisabled`) or one invoice with `invoices_overdue_reminders`.
+
 **Parameters:**
 
 | Name | Type | Required | Description |
@@ -202,6 +204,8 @@ Update configuration settings for a company. Note: core ANAF data (CIF, registra
 | `email` | string | No | Contact email address |
 | `syncDaysBack` | number | No | Number of days to sync back from ANAF (1-365) |
 | `efacturaDelayHours` | number | No | Hours to delay e-Factura sync (0-72) |
+| `overdueRemindersEnabled` | boolean | No | Turn the automatic overdue reminders on or off (default off) |
+| `overdueReminderSteps` | object[] \| null | No | 1 to 5 steps of `{ days, subject, body }`. `days` is 1-365 after the due date and unique; `subject` (one line, up to 200 characters, no `<` or `>`) and `body` (up to 5000 characters) are optional and fall back to the default text. `null` restores the default steps (3, 7 and 14 days). Variables: `[[client_name]]`, `[[invoice_number]]`, `[[total]]`, `[[balance]]`, `[[currency]]`, `[[due_date]]`, `[[issue_date]]`, `[[days_overdue]]`, `[[company_name]]`, `[[client_outstanding]]` |
 | `archiveEnabled` | boolean | No | Enable automatic archiving |
 | `archiveRetentionYears` | number | No | Years to retain archived data (1-50) |
 | `enabledModules` | string[] \| null | No | Array of enabled module keys for sidebar visibility (null = all enabled). Valid keys: `delivery_notes`, `receipts`, `proforma_invoices`, `recurring_invoices`, `reports`, `efactura`, `spv_messages` |
@@ -483,6 +487,18 @@ Resync a single invoice with its client's current profile data (receiver name, C
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `uuid` | string | Yes | Invoice UUID to resync with its client's current data |
+| `companyId` | string | No | Company UUID override (uses active company if not set) |
+
+### `invoices_overdue_reminders`
+
+Turn the company's automatic overdue reminders off or back on for one invoice. Returns the invoice, with `overdueRemindersDisabled`, `lastOverdueReminderDays` and `lastOverdueReminderAt`. Works on issued invoices. Requires invoice edit permission. The reminders are configured per company with `companies_update`; a whole client is excluded with `clients_update` (`overdueRemindersDisabled`). Sent reminders appear in `invoices_email_history` with category `payment_reminder`.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `uuid` | string | Yes | Invoice UUID |
+| `enabled` | boolean | Yes | `false` = this invoice gets no automatic overdue reminders; `true` = it gets them again |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `invoices_restore`
@@ -818,6 +834,7 @@ Create a new client manually. Requires at least a name. If a CUI is provided and
 | `bankName` | string | No | Bank name |
 | `bankAccount` | string | No | IBAN or bank account number |
 | `defaultPaymentTermDays` | number | No | Default payment term in days |
+| `overdueRemindersDisabled` | boolean | No | `true` = the automatic overdue reminders of the company skip this client (default false) |
 | `contactPerson` | string | No | Contact person name |
 | `notes` | string | No | Internal notes |
 | `idNumber` | string | No | Client identification number (personal ID, passport, etc.) |
@@ -850,6 +867,7 @@ Update an existing client. Only provided fields are updated; omitted fields rema
 | `bankName` | string | No | Bank name |
 | `bankAccount` | string | No | IBAN or bank account number |
 | `defaultPaymentTermDays` | number | No | Default payment term in days |
+| `overdueRemindersDisabled` | boolean | No | `true` = the automatic overdue reminders of the company skip this client (default false) |
 | `contactPerson` | string | No | Contact person name |
 | `notes` | string | No | Internal notes |
 | `idNumber` | string | No | Client identification number (personal ID, passport, etc.) |
@@ -3983,7 +4001,7 @@ Execute an import job after mapping is confirmed. Runs asynchronously.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `id` | string | Yes | Import job ID |
-| `importOptions` | object | No | `markAsPaid` (invoice imports); `groupBy` = week \| day \| order and `platformName` / `platformCif` / `platformCountry` (platform_sales); `includeAll` for orders that are not paid / completed (WooCommerce, PrestaShop); `cashRegisterName`, `vatGroups` (`{"1": "21", "2": "11", "3": "5", "4": "0"}`) and `paymentTypes` (`{"1": "cash", "3": "card"}`) for receipts |
+| `importOptions` | object | No | `markAsPaid` (invoice imports); `groupBy` = week \| day \| order and `platformName` / `platformCif` / `platformCountry` (platform_sales); `includeAll` for orders that are not paid / completed (WooCommerce, PrestaShop); `cashRegisterName`, `vatGroups` (`{"1": "21", "2": "11", "3": "5", "4": "0"}`) and `paymentTypes` (`{"1": "cash", "3": "card"}`) for receipts; `dateFrom` / `dateTo` (`YYYY-MM-DD`, issue date, inclusive) and `clientCifs` (array of tax codes, or one string separated by commas, spaces or newlines; `RO` prefix and spacing ignored; at most 2000) for invoice imports: rows outside the filter count as skipped, a row without a readable date or tax code is skipped too, and an invalid value returns 422 |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `import_get`
@@ -4005,15 +4023,21 @@ Partner lists: `clients` and `suppliers` read the client / supplier list exporte
 
 Invoice history: `invoices_issued` and `invoices_received` read the invoice report of another invoicing or accounting program (every source that imports clients) or any spreadsheet (`generic`), with one row per invoice or one row per invoice line. The mapping is suggested from the usual column names; the collection status (`Rest de plată`, `Încasat`, `Stare`) gives paid or partially paid invoices, the others follow `markAsPaid`; clients missing from the nomenclature are created from the invoice. The invoice XML these programs export for the accountant (`<Facturi><Factura>…`, an `.xml` file with source `smartbill`, `saga`, `oblio`, `fgo` or `generic`) is read too, one line per `<Linie>`; invoices of another fiscal code than the company's are refused. Imported invoices are history and are never sent to ANAF.
 
+The `facturis` sales journal also reads columns added to it by their usual names: due date, amount left to pay, paid amount, state and the reversed invoice. The invoice target field `stornoOf` holds the number of the invoice a storno reverses: the storno is linked to that invoice and gets status `refund`, and the reversed invoice becomes `refunded` when it is an imported record itself.
+
+e-Factura XML: source `efactura` with `importType` `invoices_issued` or `invoices_received` reads UBL Invoice and CreditNote files, one `.xml` file or a `.zip` of up to 5000 of them (other XML files in the archive, such as signatures, are ignored). The invoices are kept as history with status `synced` and are never sent to ANAF. The mapping is fixed. A credit note becomes a negative invoice, linked to the invoice named in its `BillingReference` when that invoice exists. An invoice whose seller (issued) or buyer (received) is not the company is refused with a row error. Numbers already present are skipped.
+
+Collections: `importType` `payments` reads the collections of issued invoices, one row per payment, for every source that imports invoices (including `facturis` and `generic`). Target fields: `invoiceNumber` and `amount` (required), `series`, `paymentDate`, `paymentMethod`, `reference`, `notes`; the usual Romanian headers (`Factura`, `Data incasarii`, `Suma`, `Mod plata`, `Nr chitanta`) are recognised. The invoice is found by number among the company's issued invoices. Several rows for one invoice are its partial payments. A payment larger than what is left to pay is a row error. The first imported payment replaces the placeholder payment a history import put on the invoice date. A payment already on the invoice with the same date, amount and reference is skipped, so importing the same file again adds nothing. The job `summary` carries `paymentsCreated`, `invoicesUpdated` and `replacedPayments`.
+
 Sales sources: a platform statement (`uber`, `bolt`, `glovo`, `tazz`) is uploaded with `importType` `platform_sales` and becomes one sales invoice to the platform per group plus the commission purchase invoice; a shop order export (`woocommerce`, `prestashop`) uses `invoices_issued` and becomes one invoice per order; the A4200 XML a fiscal cash register exports (or a ZIP with a month of them) uses source `cash_register` with `importType` `receipts` and becomes one receipt per bon plus a daily summary on the job.
 
 **Parameters:**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `filePath` | string | Yes | Absolute path to the file (CSV, XLSX, XML, or a ZIP of A4200 XML files) |
-| `importType` | string | Yes | Type: clients, suppliers, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts |
-| `source` | string | Yes | Source app: smartbill, saga, oblio, fgo, facturis_online, easybill, ciel, factureaza, facturare_pro, icefact, bolt, facturis, emag, uber, glovo, tazz, woocommerce, prestashop, cash_register, generic |
+| `filePath` | string | Yes | Absolute path to the file (CSV, XLSX, XML, or a ZIP of A4200 or e-Factura XML files) |
+| `importType` | string | Yes | Type: clients, suppliers, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts, payments |
+| `source` | string | Yes | Source app: smartbill, saga, oblio, fgo, facturis_online, easybill, ciel, factureaza, facturare_pro, icefact, bolt, facturis, emag, uber, glovo, tazz, woocommerce, prestashop, cash_register, efactura, generic |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `import_template`
@@ -4024,13 +4048,13 @@ Download a CSV template for a specific import type. Returns base64-encoded CSV.
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `importType` | string | Yes | Type: clients, suppliers, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts |
+| `importType` | string | Yes | Type: clients, suppliers, products, invoices_issued, invoices_received, recurring_invoices, platform_sales, receipts, payments |
 | `source` | string | No | Platform / shop whose column layout the template should use: uber, bolt, glovo, tazz, woocommerce, prestashop |
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 
 ### `import_revert`
 
-Revert a completed or cancelled import job: deletes every record it created (invoices and their lines, receipts, clients, suppliers, payments) and marks the job as reverted.
+Revert a completed or cancelled import job: deletes every record it created (invoices and their lines, receipts, clients, suppliers, payments) and marks the job as reverted. Reverting a payments import removes its payments and restores the placeholder payments it replaced.
 
 **Parameters:**
 

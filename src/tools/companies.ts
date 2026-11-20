@@ -69,7 +69,7 @@ export const tools = [
   {
     name: 'companies_update',
     description:
-      'Update configuration settings for a company. Note: core ANAF data (CIF, registration number, VAT status, official address) cannot be modified as they are synced from official ANAF sources. Only editable fields like contact info, bank details, and sync settings can be changed.',
+      'Update configuration settings for a company. Note: core ANAF data (CIF, registration number, VAT status, official address) cannot be modified as they are synced from official ANAF sources. Only editable fields like contact info, bank details, and sync settings can be changed. Also sets the automatic overdue reminders: overdueRemindersEnabled turns them on, overdueReminderSteps sets when each email goes out and what it says. A step is sent on its day or up to 2 days late, never later, so turning the reminders on does not email clients about invoices that are long overdue. Exclude one client with clients_update (overdueRemindersDisabled) or one invoice with invoices_overdue_reminders.',
     inputSchema: z.object({
       uuid: z.string().describe('Company UUID'),
       name: z.string().optional().describe('Company display name'),
@@ -96,6 +96,23 @@ export const tools = [
         .max(72)
         .optional()
         .describe('Hours to delay e-Factura sync (0-72)'),
+      overdueRemindersEnabled: z
+        .boolean()
+        .optional()
+        .describe('Turn the automatic overdue reminders on or off (default off). When on, the client of each overdue, unpaid issued invoice gets one email per reminder step'),
+      overdueReminderSteps: z
+        .array(
+          z.object({
+            days: z.number().int().min(1).max(365).describe('Days after the due date when this step is sent (1-365, unique across the steps)'),
+            subject: z.string().max(200).nullable().optional().describe('Email subject, one line, up to 200 characters, without < or >. Omit or null for the default subject'),
+            body: z.string().max(5000).nullable().optional().describe('Email body, up to 5000 characters. Omit or null for the default body'),
+          })
+        )
+        .min(1)
+        .max(5)
+        .nullable()
+        .optional()
+        .describe('Reminder steps, 1 to 5. null restores the default steps (3, 7 and 14 days). Subject and body take the variables [[client_name]], [[invoice_number]], [[total]], [[balance]], [[currency]], [[due_date]], [[issue_date]], [[days_overdue]], [[company_name]], [[client_outstanding]]'),
       archiveEnabled: z.boolean().optional().describe('Enable automatic archiving'),
       archiveRetentionYears: z
         .number()
@@ -125,6 +142,8 @@ export const tools = [
         'email',
         'syncDaysBack',
         'efacturaDelayHours',
+        'overdueRemindersEnabled',
+        'overdueReminderSteps',
         'archiveEnabled',
         'archiveRetentionYears',
         'enabledModules',

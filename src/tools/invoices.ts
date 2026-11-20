@@ -797,6 +797,35 @@ export const tools = [
   },
 
   {
+    name: 'invoices_overdue_reminders',
+    description:
+      'Turn the company\'s automatic overdue reminders off or back on for one invoice. Calls POST /api/v1/invoices/{uuid}/overdue-reminders and returns the invoice, with overdueRemindersDisabled, lastOverdueReminderDays and lastOverdueReminderAt. Works on issued invoices. Requires invoice edit permission. The reminders themselves are configured per company with companies_update (overdueRemindersEnabled, overdueReminderSteps); a whole client is excluded with clients_update (overdueRemindersDisabled). Sent reminders appear in invoices_email_history with category payment_reminder.',
+    inputSchema: z.object({
+      uuid: z.string().describe('Invoice UUID'),
+      enabled: z
+        .boolean()
+        .describe('false = this invoice gets no automatic overdue reminders; true = it gets them again'),
+      companyId: z
+        .string()
+        .optional()
+        .describe('Company UUID override (uses active company if not set)'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+      const companyId = getCompanyId(params);
+      if (!companyId) return noCompanySelected();
+
+      const { uuid, enabled } = params as { uuid: string; enabled: boolean };
+      const result = await apiRequest(`/api/v1/invoices/${uuid}/overdue-reminders`, {
+        method: 'POST',
+        companyId,
+        body: { enabled },
+      });
+      return formatResponse(result);
+    },
+  },
+
+  {
     name: 'invoices_restore',
     description:
       'Restore a cancelled invoice back to "draft" status. Only for accidental cancellations. Cannot restore if the invoice was submitted to ANAF, has credit notes, or has recorded payments. The invoice can then be edited and reissued.',

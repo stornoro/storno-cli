@@ -116,6 +116,10 @@ export const tools = [
         .int()
         .optional()
         .describe('Default payment term in days for invoices issued to this client'),
+      overdueRemindersDisabled: z
+        .boolean()
+        .optional()
+        .describe('true = the automatic overdue reminders of the company skip this client (default false)'),
       contactPerson: z.string().optional().describe('Name of the primary contact person'),
       notes: z.string().optional().describe('Internal notes about the client'),
       idNumber: z.string().optional().describe('Client identification number (personal ID, passport, etc.)'),
@@ -176,6 +180,10 @@ export const tools = [
         .int()
         .optional()
         .describe('Default payment term in days for invoices issued to this client'),
+      overdueRemindersDisabled: z
+        .boolean()
+        .optional()
+        .describe('true = the automatic overdue reminders of the company skip this client (default false)'),
       contactPerson: z.string().optional().describe('Name of the primary contact person'),
       notes: z.string().optional().describe('Internal notes about the client'),
       idNumber: z.string().optional().describe('Client identification number (personal ID, passport, etc.)'),
