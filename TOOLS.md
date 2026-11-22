@@ -58,11 +58,11 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Calendar subscription](#calendar-subscription)
 - [Integrations (partner platforms)](#integrations-partner-platforms)
 
-**Total tools: 374**
+**Total tools: 377**
 
 ### Tool annotations
 
-Every tool is registered with the MCP annotations clients and directory reviews rely on, each hint an explicit boolean: `title` (e.g. *Invoices: bulk delete*), `readOnlyHint` (reads, renders, validations — 178 tools), `destructiveHint` (deletes, cancellations, revocations, `import_revert`, `backup_restore` — 44 tools), `idempotentHint` (repeating the call with the same arguments has no further effect: reads, updates, deletes, state flags) and `openWorldHint` (the tool reaches outside Storno: ANAF, VIES, BNR, the mail server, the local Storno Agent, a webhook endpoint, a provider test — 42 tools). A *storno* (credit note) is a write, not a delete: the original document stays. The mapping lives in `src/annotations.ts`; `npm run check:annotations -- --table` prints the full table and fails if any hint is missing.
+Every tool is registered with the MCP annotations clients and directory reviews rely on, each hint an explicit boolean: `title` (e.g. *Invoices: bulk delete*), `readOnlyHint` (reads, renders, validations — 180 tools), `destructiveHint` (deletes, cancellations, revocations, `import_revert`, `backup_restore` — 44 tools), `idempotentHint` (repeating the call with the same arguments has no further effect: reads, updates, deletes, state flags) and `openWorldHint` (the tool reaches outside Storno: ANAF, VIES, BNR, the mail server, the local Storno Agent, a webhook endpoint, a provider test — 44 tools). A *storno* (credit note) is a write, not a delete: the original document stays. The mapping lives in `src/annotations.ts`; `npm run check:annotations -- --table` prints the full table and fails if any hint is missing.
 
 ---
 
@@ -209,6 +209,21 @@ Also sets the automatic overdue reminders. `overdueRemindersEnabled` turns them 
 | `archiveEnabled` | boolean | No | Enable automatic archiving |
 | `archiveRetentionYears` | number | No | Years to retain archived data (1-50) |
 | `enabledModules` | string[] \| null | No | Array of enabled module keys for sidebar visibility (null = all enabled). Valid keys: `delivery_notes`, `receipts`, `proforma_invoices`, `recurring_invoices`, `reports`, `efactura`, `spv_messages` |
+
+### `companies_overdue_reminders_backlog`
+
+Count or send the reminder backlog of a company: overdue, unpaid issued invoices that passed a reminder step before the daily run could send it (the reminders were off at the time, or the invoices were imported). The daily run never mails those.
+
+With `dryRun` true (the default) nothing is sent and the result lists, per client, how many invoices and what balance an email would cover. With `dryRun` false each client gets one email listing all their backlog invoices, with the statement PDF attached. Every invoice is then marked with the step it missed, so a second call sends nothing for it and the daily run continues with the later steps.
+
+Clients and invoices excluded from reminders, clients without an email and unsubscribed recipients are left out and counted under `skipped`. Returns 422 `REMINDERS_OFF` when the reminders are off, 402 when the plan cannot send emails, 409 while another send is running. Requires company edit permission.
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `uuid` | string | Yes | Company UUID |
+| `dryRun` | boolean | No | `true` (default) = only count what would be sent; `false` = send the emails |
 
 ### `companies_delete`
 

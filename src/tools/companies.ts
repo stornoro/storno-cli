@@ -161,6 +161,29 @@ export const tools = [
   },
 
   {
+    name: 'companies_overdue_reminders_backlog',
+    description:
+      'Count or send the reminder backlog of a company: overdue, unpaid issued invoices that passed a reminder step before the daily run could send it (the reminders were off at the time, or the invoices were imported). The daily run never mails those. Calls POST /api/v1/companies/{uuid}/overdue-reminders/backlog. With dryRun true (the default here) nothing is sent: the result lists, per client, how many invoices and what balance an email would cover. With dryRun false each client gets one email listing all their backlog invoices, with the statement PDF attached, and every invoice is marked with the step it missed, so a second call sends nothing for them and the daily run continues with later steps. Clients and invoices excluded from reminders, clients without an email and unsubscribed recipients are left out and counted under skipped. Returns 422 REMINDERS_OFF when the company has the reminders off, 402 when the plan cannot send emails, 409 while another send is running. Requires company edit permission. Show the dry run to the user and get their confirmation before sending.',
+    inputSchema: z.object({
+      uuid: z.string().describe('Company UUID'),
+      dryRun: z
+        .boolean()
+        .optional()
+        .describe('true (default) = only count what would be sent; false = send the emails'),
+    }),
+    handler: async (params: Record<string, unknown>): Promise<string> => {
+      if (!getConfig().token) return notAuthenticated();
+
+      const { uuid, dryRun } = params as { uuid: string; dryRun?: boolean };
+      const result = await apiRequest(`/api/v1/companies/${uuid}/overdue-reminders/backlog`, {
+        method: 'POST',
+        body: { dryRun: dryRun ?? true },
+      });
+      return formatResponse(result);
+    },
+  },
+
+  {
     name: 'companies_delete',
     description:
       'Permanently delete a company and all associated data (invoices, clients, products, ANAF tokens). This triggers an asynchronous cascade deletion. Only Owner or Admin roles can delete companies. This action cannot be undone.',

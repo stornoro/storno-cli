@@ -106,6 +106,7 @@ const EXPLICIT: Record<string, Hints> = {
   clients_sync_invoices: WRITE_IDEMPOTENT,
   invoices_sync_client: WRITE_IDEMPOTENT,
   invoices_overdue_reminders: WRITE_IDEMPOTENT,
+  companies_overdue_reminders_backlog: WRITE_EXTERNAL, // mails clients
   invoices_bulk_mark_paid: WRITE_IDEMPOTENT,
   invoices_share_links_create: WRITE,
   licensing_create_key: WRITE,
