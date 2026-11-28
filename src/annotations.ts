@@ -69,6 +69,10 @@ const EXPLICIT: Record<string, Hints> = {
   document_series_numbering_decision: READ,
   members_permissions_reference: READ,
   related_get: READ,
+  clients_insights: READ,
+  suppliers_insights: READ,
+  invoices_insights: READ,
+  reports_expenses: READ,
   search: READ,
 
   // State transitions that are writes, not deletes

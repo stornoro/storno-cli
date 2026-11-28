@@ -58,11 +58,11 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Calendar subscription](#calendar-subscription)
 - [Integrations (partner platforms)](#integrations-partner-platforms)
 
-**Total tools: 378**
+**Total tools: 382**
 
 ### Tool annotations
 
-Every tool is registered with the MCP annotations clients and directory reviews rely on, each hint an explicit boolean: `title` (e.g. *Invoices: bulk delete*), `readOnlyHint` (reads, renders, validations — 181 tools), `destructiveHint` (deletes, cancellations, revocations, `import_revert`, `backup_restore` — 44 tools), `idempotentHint` (repeating the call with the same arguments has no further effect: reads, updates, deletes, state flags) and `openWorldHint` (the tool reaches outside Storno: ANAF, VIES, BNR, the mail server, the local Storno Agent, a webhook endpoint, a provider test — 44 tools). A *storno* (credit note) is a write, not a delete: the original document stays. The mapping lives in `src/annotations.ts`; `npm run check:annotations -- --table` prints the full table and fails if any hint is missing.
+Every tool is registered with the MCP annotations clients and directory reviews rely on, each hint an explicit boolean: `title` (e.g. *Invoices: bulk delete*), `readOnlyHint` (reads, renders, validations — 185 tools), `destructiveHint` (deletes, cancellations, revocations, `import_revert`, `backup_restore` — 44 tools), `idempotentHint` (repeating the call with the same arguments has no further effect: reads, updates, deletes, state flags) and `openWorldHint` (the tool reaches outside Storno: ANAF, VIES, BNR, the mail server, the local Storno Agent, a webhook endpoint, a provider test — 44 tools). A *storno* (credit note) is a write, not a delete: the original document stays. The mapping lives in `src/annotations.ts`; `npm run check:annotations -- --table` prints the full table and fails if any hint is missing.
 
 ---
 
@@ -3542,6 +3542,17 @@ Search the active company across invoices, proforma invoices, clients, suppliers
 | `types` | string[] | No | Subset of `invoices`, `proformas`, `clients`, `suppliers`, `products`. Default: all |
 | `limit` | integer | No | Results per group, 1 to 20 (default 5) |
 | `companyId` | string | No | Company UUID (overrides `STORNO_COMPANY_ID`) |
+
+### `clients_insights` / `suppliers_insights` / `invoices_insights` / `reports_expenses`
+
+Summaries an owner reads on a client, a supplier, one invoice and the month's purchases. They are read from monthly summary tables that follow every invoice write a few seconds after it is saved (`updatedAt` says when). The window is the last 12 months by issue date, current month included. Drafts, cancelled and rejected invoices and proformas are left out. Amounts are net of VAT in the company currency, except balances and due amounts, which include VAT. A percent is null when there is no positive base to compare with. Items group line descriptions that differ only by a date, a period or HTML leftovers (per supplier for received lines, per company for issued lines); `samples` shows up to three descriptions as received.
+
+| Tool | Parameters | Returns |
+|---|---|---|
+| `clients_insights` | `uuid`, `companyId?` | `payment` (`avgDaysLate`, null below 5 fully paid invoices, with the previous 12 months and the last 12 payments), `sales` (net, share of company sales, last invoice), `monthly`, `topItems`. Needs `client.view` and `invoice.view` |
+| `suppliers_insights` | `uuid`, `companyId?` | `purchases` (net, share, this month against last), `payable` (open invoices, VAT included), `monthly`, `topItems`, `priceWatch` (the item whose unit price rose the most), `periods` (months a recurring item was missing or billed twice). Needs `client.view` and `invoice.view` |
+| `invoices_insights` | `uuid`, `companyId?` | `usual` (net against the median of earlier invoices of the partner in the same currency, `differencePercent` null below 5). Issued: `expectedPayment`, `exposure`. Received: `lines`, `priceChanges`, `dueWeek`. Needs invoice view on that invoice |
+| `reports_expenses` | `month?` (YYYY-MM, default current), `companyId?` | `total` against the previous month and the same month last year, `monthly`, `topSuppliers`, `topItems`, `signals` (increases worth a look). Needs `report.view`; 402 `PLAN_LIMIT` without reports in the plan, 422 `INVALID_MONTH` for a bad month |
 
 ### `agent_status` / `agent_certificates` / `agent_sign_pdf` / `agent_submit_declaration_pdf`
 
