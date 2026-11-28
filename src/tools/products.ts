@@ -11,7 +11,7 @@ export const tools = [
   {
     name: 'products_list',
     description:
-      'List products for the active company. Products are sync-only and are automatically extracted from invoice line items during ANAF synchronization — they cannot be manually created or edited. Results can be filtered by active status and searched by name, code, or description.',
+      'List products for the active company. Products are sync-only and are automatically extracted from invoice line items during ANAF synchronization — they cannot be manually created or edited. Results can be filtered by active status and searched by name or code.',
     inputSchema: z.object({
       companyId: z
         .string()
@@ -26,7 +26,7 @@ export const tools = [
       search: z
         .string()
         .optional()
-        .describe('Search term to filter by product name, code, or description'),
+        .describe('Words in any order, matched against product name and code'),
       isActive: z
         .boolean()
         .optional()

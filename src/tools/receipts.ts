@@ -25,7 +25,7 @@ export const tools = [
       companyId: z.string().optional().describe('Company UUID (overrides configured default)'),
       page: z.number().optional().describe('Page number (default: 1)'),
       limit: z.number().optional().describe('Items per page (default: 20, max: 100)'),
-      search: z.string().optional().describe('Search term for receipt number or customer name'),
+      search: z.string().optional().describe('Words in any order, matched against the number, customer name, customer CIF, fiscal number and the linked client name, CUI, CNP or VAT code'),
       status: z
         .enum(['draft', 'issued', 'invoiced', 'cancelled'])
         .optional()

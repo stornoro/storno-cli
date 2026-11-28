@@ -68,6 +68,7 @@ import { tools as fiscalCalendarTools } from './tools/fiscal-calendar.js';
 import { tools as calendarFeedTools } from './tools/calendar-feed.js';
 import { tools as clientStatementsTools } from './tools/client-statements.js';
 import { tools as relatedTools } from './tools/related.js';
+import { tools as searchTools } from './tools/search.js';
 import { tools as agentTools } from './tools/agent.js';
 import { tools as partnersTools } from './tools/partners.js';
 import { tools as fleetTools } from './tools/fleet.js';
@@ -135,6 +136,7 @@ export const allTools: ToolDef[] = [
   ...calendarFeedTools,
   ...clientStatementsTools,
   ...relatedTools,
+  ...searchTools,
   ...agentTools,
   ...partnersTools,
   ...fleetTools,
@@ -145,7 +147,7 @@ export const allTools: ToolDef[] = [
 export function createMcpServer(): McpServer {
   const server = new McpServer({
     name: 'storno',
-    version: '1.0.61',
+    version: '1.0.62',
   });
 
   for (const tool of allTools) {

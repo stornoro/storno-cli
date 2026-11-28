@@ -170,7 +170,7 @@ export const tools = [
       search: z
         .string()
         .optional()
-        .describe('Search term for invoice number or client name'),
+        .describe('Words in any order, each matched against number, party names, tax ids (CUI, with or without RO) and the linked client CNP or VAT code'),
       status: z
         .enum([
           'draft',
@@ -1094,7 +1094,7 @@ export const tools = [
         .string()
         .optional()
         .describe('Company UUID override (uses active company if not set)'),
-      search: z.string().optional().describe('Search term for invoice number or client name'),
+      search: z.string().optional().describe('Words in any order, each matched against number, party names, tax ids (CUI, with or without RO) and the linked client CNP or VAT code'),
       status: z
         .enum([
           'draft',
@@ -1353,7 +1353,7 @@ export const tools = [
         .string()
         .optional()
         .describe('Company UUID override (uses active company if not set)'),
-      search: z.string().optional().describe('Search term for invoice number or client name'),
+      search: z.string().optional().describe('Words in any order, each matched against number, party names, tax ids (CUI, with or without RO) and the linked client CNP or VAT code'),
       status: z
         .enum([
           'draft',

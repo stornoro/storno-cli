@@ -12,7 +12,7 @@ export const tools = [
       companyId: z.string().optional().describe('Company UUID (overrides configured default)'),
       page: z.number().optional().describe('Page number (default: 1)'),
       limit: z.number().optional().describe('Items per page (default: 50, max: 200)'),
-      search: z.string().optional().describe('Search term to filter by name, CUI, or email'),
+      search: z.string().optional().describe('Words in any order, matched against name, CIF (with or without RO), VAT code, email and registration number'),
     }),
     handler: async (params: Record<string, unknown>): Promise<string> => {
       const config = getConfig();

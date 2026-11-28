@@ -11,7 +11,7 @@ export const tools = [
   {
     name: 'clients_list',
     description:
-      'List clients for the active company. Results are grouped alphabetically by name and can be filtered by type (company/individual) or searched by name, CUI/CNP, or email.',
+      'List clients for the active company. Results are grouped alphabetically by name and can be filtered by type (company/individual) or searched by name, CUI/CNP, VAT code, email or contact person.',
     inputSchema: z.object({
       companyId: z
         .string()
@@ -26,7 +26,7 @@ export const tools = [
       search: z
         .string()
         .optional()
-        .describe('Search term to filter by name, CUI/CNP, or email'),
+        .describe('Words in any order, matched against name, CUI (with or without RO), CNP, VAT code, email, ID number, registration number, client code and contact person'),
       type: z
         .enum(['company', 'individual'])
         .optional()

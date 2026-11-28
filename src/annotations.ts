@@ -69,6 +69,7 @@ const EXPLICIT: Record<string, Hints> = {
   document_series_numbering_decision: READ,
   members_permissions_reference: READ,
   related_get: READ,
+  search: READ,
 
   // State transitions that are writes, not deletes
   declarations_validate: WRITE_IDEMPOTENT, // moves the declaration to "validated"
@@ -222,6 +223,7 @@ export function hintsFor(name: string): Hints {
 /** "invoices_bulk_delete" → "Invoices: bulk delete" */
 export function titleFor(name: string): string {
   const parts = name.split('_');
+  if (parts.length === 1) return name.charAt(0).toUpperCase() + name.slice(1);
   const resources = new Set([
     'invoices', 'clients', 'suppliers', 'products', 'receipts', 'payments', 'companies', 'dosare', 'declarations',
     'declaration', 'proforma_invoices', 'delivery_notes', 'recurring_invoices', 'webhooks', 'expiries', 'vehicles',

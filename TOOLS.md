@@ -58,11 +58,11 @@ Each tool can be called by any MCP-compatible AI assistant (Claude Code, Cursor,
 - [Calendar subscription](#calendar-subscription)
 - [Integrations (partner platforms)](#integrations-partner-platforms)
 
-**Total tools: 377**
+**Total tools: 378**
 
 ### Tool annotations
 
-Every tool is registered with the MCP annotations clients and directory reviews rely on, each hint an explicit boolean: `title` (e.g. *Invoices: bulk delete*), `readOnlyHint` (reads, renders, validations — 180 tools), `destructiveHint` (deletes, cancellations, revocations, `import_revert`, `backup_restore` — 44 tools), `idempotentHint` (repeating the call with the same arguments has no further effect: reads, updates, deletes, state flags) and `openWorldHint` (the tool reaches outside Storno: ANAF, VIES, BNR, the mail server, the local Storno Agent, a webhook endpoint, a provider test — 44 tools). A *storno* (credit note) is a write, not a delete: the original document stays. The mapping lives in `src/annotations.ts`; `npm run check:annotations -- --table` prints the full table and fails if any hint is missing.
+Every tool is registered with the MCP annotations clients and directory reviews rely on, each hint an explicit boolean: `title` (e.g. *Invoices: bulk delete*), `readOnlyHint` (reads, renders, validations — 181 tools), `destructiveHint` (deletes, cancellations, revocations, `import_revert`, `backup_restore` — 44 tools), `idempotentHint` (repeating the call with the same arguments has no further effect: reads, updates, deletes, state flags) and `openWorldHint` (the tool reaches outside Storno: ANAF, VIES, BNR, the mail server, the local Storno Agent, a webhook endpoint, a provider test — 44 tools). A *storno* (credit note) is a write, not a delete: the original document stays. The mapping lives in `src/annotations.ts`; `npm run check:annotations -- --table` prints the full table and fails if any hint is missing.
 
 ---
 
@@ -291,7 +291,7 @@ List invoices for the active company with pagination, filtering, and sorting. Su
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 | `page` | number | No | Page number (default: 1) |
 | `limit` | number | No | Items per page, max 100 (default: 20) |
-| `search` | string | No | Search term for invoice number or client name |
+| `search` | string | No | Words in any order, each matched against number, party names, tax ids (CUI, with or without RO) and the linked client CNP or VAT code |
 | `status` | enum(draft, issued, sent_to_provider, validated, rejected, cancelled) | No | Filter by invoice status |
 | `direction` | enum(incoming, outgoing) | No | Filter by direction: incoming or outgoing invoices |
 | `dateFrom` | string | No | Start date filter on the issue date, ISO 8601 (YYYY-MM-DD) |
@@ -634,7 +634,7 @@ Export a filtered list of invoices to CSV format. Accepts the same filters as in
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
-| `search` | string | No | Search term for invoice number or client name |
+| `search` | string | No | Words in any order, each matched against number, party names, tax ids (CUI, with or without RO) and the linked client CNP or VAT code |
 | `status` | enum(draft, issued, sent_to_provider, validated, rejected, cancelled) | No | Filter by invoice status |
 | `direction` | enum(incoming, outgoing) | No | Filter by direction |
 | `dateFrom` | string | No | Start date (YYYY-MM-DD, issue date) |
@@ -714,7 +714,7 @@ Export invoices in Saga XML format for accounting software integration (e.g., Sa
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
-| `search` | string | No | Search term for invoice number or client name |
+| `search` | string | No | Words in any order, each matched against number, party names, tax ids (CUI, with or without RO) and the linked client CNP or VAT code |
 | `status` | enum(draft, issued, sent_to_provider, validated, rejected, cancelled) | No | Filter by invoice status |
 | `direction` | enum(incoming, outgoing) | No | Filter by direction |
 | `dateFrom` | string | No | Start date (YYYY-MM-DD, issue date) |
@@ -801,7 +801,7 @@ Revoke/delete a share link, making it permanently inaccessible.
 
 ### `clients_list`
 
-List clients for the active company. Results are grouped alphabetically by name and can be filtered by type (company/individual) or searched by name, CUI/CNP, or email.
+List clients for the active company. Results are grouped alphabetically by name and can be filtered by type (company/individual) or searched by name, CUI/CNP, VAT code, email or contact person.
 
 **Parameters:**
 
@@ -810,7 +810,7 @@ List clients for the active company. Results are grouped alphabetically by name 
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 | `page` | number | No | Page number (default: 1) |
 | `limit` | number | No | Items per page, max 200 (default: 50) |
-| `search` | string | No | Search term to filter by name, CUI/CNP, or email |
+| `search` | string | No | Words in any order, matched against name, CUI (with or without RO), CNP, VAT code, email, ID number, registration number, client code and contact person |
 | `type` | enum(company, individual) | No | Filter by client type: "company" or "individual" |
 
 ### `clients_get`
@@ -1021,7 +1021,7 @@ E-mail the statement of unpaid invoices ("Facturi neachitate {company}") with th
 
 ### `products_list`
 
-List products for the active company. Products are sync-only and are automatically extracted from invoice line items during ANAF synchronization — they cannot be manually created or edited. Results can be filtered by active status and searched by name, code, or description.
+List products for the active company. Products are sync-only and are automatically extracted from invoice line items during ANAF synchronization — they cannot be manually created or edited. Results can be filtered by active status and searched by name or code.
 
 **Parameters:**
 
@@ -1030,7 +1030,7 @@ List products for the active company. Products are sync-only and are automatical
 | `companyId` | string | No | Company UUID override (uses active company if not set) |
 | `page` | number | No | Page number (default: 1) |
 | `limit` | number | No | Items per page, max 200 (default: 50) |
-| `search` | string | No | Search term to filter by product name, code, or description |
+| `search` | string | No | Words in any order, matched against product name and code |
 | `isActive` | boolean | No | Filter by active status (true = active only, false = inactive only) |
 
 ### `products_get`
@@ -1504,7 +1504,7 @@ List proforma invoices for the selected company with optional filtering by statu
 | `companyId` | string | No | Company UUID (overrides configured default) |
 | `page` | number | No | Page number (default: 1) |
 | `limit` | number | No | Items per page (default: 20, max: 100) |
-| `search` | string | No | Search term for invoice number or client name |
+| `search` | string | No | Words in any order, matched against the number and the linked client name, CUI (with or without RO), CNP or VAT code |
 | `status` | enum(draft, sent, accepted, rejected, converted, cancelled) | No | Filter by status |
 | `from` | string | No | Start date filter (YYYY-MM-DD) |
 | `to` | string | No | End date filter (YYYY-MM-DD) |
@@ -1694,7 +1694,7 @@ List recurring invoice templates for the selected company. Supports filtering by
 | `companyId` | string | No | Company UUID (overrides configured default) |
 | `page` | number | No | Page number (default: 1) |
 | `limit` | number | No | Items per page (default: 20, max: 100) |
-| `search` | string | No | Search term to filter by reference or notes |
+| `search` | string | No | Words in any order, matched against the reference and the linked client name, CUI (with or without RO), CNP or VAT code |
 | `isActive` | boolean | No | Filter by active status (true/false) |
 | `frequency` | enum(weekly, biweekly, monthly, bimonthly, quarterly, semiannual, annual) | No | Filter by generation frequency |
 
@@ -1876,7 +1876,7 @@ List delivery notes for the selected company with optional filtering by status, 
 | `companyId` | string | No | Company UUID (overrides configured default) |
 | `page` | number | No | Page number (default: 1) |
 | `limit` | number | No | Items per page (default: 20, max: 100) |
-| `search` | string | No | Search term for delivery note number or client name |
+| `search` | string | No | Words in any order, matched against the number and the linked client name, CUI (with or without RO), CNP or VAT code |
 | `status` | enum(draft, issued, converted, cancelled) | No | Filter by status |
 | `from` | string | No | Start date filter (YYYY-MM-DD) |
 | `to` | string | No | End date filter (YYYY-MM-DD) |
@@ -2188,7 +2188,7 @@ List receipts (bonuri fiscale) for the selected company with optional filtering 
 | `companyId` | string | No | Company UUID (overrides configured default) |
 | `page` | number | No | Page number (default: 1) |
 | `limit` | number | No | Items per page (default: 20, max: 100) |
-| `search` | string | No | Search term for receipt number or customer name |
+| `search` | string | No | Words in any order, matched against the number, customer name, customer CIF, fiscal number and the linked client name, CUI, CNP or VAT code |
 | `status` | enum(draft, issued, invoiced, cancelled) | No | Filter by status |
 | `from` | string | No | Start date filter (YYYY-MM-DD) |
 | `to` | string | No | End date filter (YYYY-MM-DD) |
@@ -2397,7 +2397,7 @@ Get the email sending history for a receipt, including all sent emails with thei
 
 ### `suppliers_list`
 
-List suppliers for the selected company grouped alphabetically. Suppliers are automatically created from incoming invoices via ANAF e-Factura synchronization. Supports search by name, CUI, or email.
+List suppliers for the selected company grouped alphabetically. Suppliers are automatically created from incoming invoices via ANAF e-Factura synchronization. Supports search by name, CIF, VAT code, email or registration number.
 
 **Parameters:**
 
@@ -2406,7 +2406,7 @@ List suppliers for the selected company grouped alphabetically. Suppliers are au
 | `companyId` | string | No | Company UUID (overrides configured default) |
 | `page` | number | No | Page number (default: 1) |
 | `limit` | number | No | Items per page (default: 50, max: 200) |
-| `search` | string | No | Search term to filter by name, CUI, or email |
+| `search` | string | No | Words in any order, matched against name, CIF (with or without RO), VAT code, email and registration number |
 
 ### `suppliers_create`
 
@@ -3531,6 +3531,17 @@ Typical conversation: "what do I owe ANAF?" → `dosare_actions`; "register my n
 ### `related_get`
 
 Everything connected to one record, in one call: `type` (client, supplier, invoice, recurring_invoice, declaration, spv_document, spv_request, dosar) and `id`. Groups returned as they apply: `dosare`, `clients`, `suppliers`, `invoices` (recent, with balance), `recurringInvoices`, `declarations`, `spvRequests`, `spvDocuments`; each item has `title`, `subtitle`, `status`, `date` and `href` (the web page). A client leads to its rental dosare and through them to the C168 / D212 filed and the ANAF messages; an invoice leads to the tenant's dosar and the recurring invoice that issued it; an SPV message leads to the dosar it answered. Groups the user may not view are omitted.
+
+### `search`
+
+Search the active company across invoices, proforma invoices, clients, suppliers and products in one call. The text is split into words and every word must match, in any order, so a name and a tax id can be combined; a tax id typed with the country prefix (`RO12345678` or `RO 12345678`) is searched as its digits and matches both the stored CUI and the VAT code. Groups are returned as they apply: `invoices` and `proformas` (newest first), `clients`, `suppliers`, `products` (by name). Each item has `type`, `id`, `title`, `subtitle`, `status`, `date` and `href` (the web page); invoices also carry `direction`. An invoice without a number has the title `draft`. Groups the user may not view are omitted (`invoice.view`, `client.view`, `product.view`).
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | Yes | Search text. Fewer than 2 characters returns empty groups |
+| `types` | string[] | No | Subset of `invoices`, `proformas`, `clients`, `suppliers`, `products`. Default: all |
+| `limit` | integer | No | Results per group, 1 to 20 (default 5) |
+| `companyId` | string | No | Company UUID (overrides `STORNO_COMPANY_ID`) |
 
 ### `agent_status` / `agent_certificates` / `agent_sign_pdf` / `agent_submit_declaration_pdf`
 
